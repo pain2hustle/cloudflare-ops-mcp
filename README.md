@@ -281,18 +281,26 @@ server (a Cloudflare Worker) that exposes the same engine as tools over a URL, s
 any MCP client — an agent, Claude, Cursor — can `scan_zone`, `plan_email_auth`,
 `set_dmarc_policy`, `setup_bimi`, etc. by pointing at it.
 
-Two deliberate hardening choices:
+Three deliberate hardening choices:
 
 - **The token is a Worker secret, never a tool parameter** — so it never travels
   through an MCP client's logs or an agent's transcript.
+- **The endpoint itself is locked.** Because these tools can mutate DNS, a public
+  Worker URL must not be callable by anyone who finds it. Set `MCP_ACCESS_KEY` and
+  the server rejects any request without `Authorization: Bearer <MCP_ACCESS_KEY>`
+  (or an `X-MCP-Key` header). Deploying without it leaves the endpoint open — don't.
 - **Every mutating tool is dry-run by default**; the caller must pass
   `apply: true` after seeing the diff. BIMI keeps its DMARC precondition.
 
 ```sh
 cd worker
-npx wrangler secret put CLOUDFLARE_API_TOKEN   # paste the scoped token once
+npx wrangler secret put CLOUDFLARE_API_TOKEN   # the scoped CF token the tools use
+npx wrangler secret put MCP_ACCESS_KEY         # a random string that locks this URL
 npx wrangler deploy
 ```
+
+Point your MCP client at the deployed URL and add the header
+`Authorization: Bearer <MCP_ACCESS_KEY>`.
 
 The core library has **zero dependencies**; the Worker is an optional surface —
 you never need it to use the CLI.

@@ -277,12 +277,35 @@ export default {
     // Health/info on GET.
     if (request.method === "GET") {
       return new Response(
-        JSON.stringify({ ok: true, server: SERVER, tools: TOOLS.map((t) => t.name), note: "POST JSON-RPC 2.0 (MCP) to this endpoint." }, null, 2),
+        JSON.stringify({
+          ok: true,
+          server: SERVER,
+          tools: TOOLS.map((t) => t.name),
+          auth_required: !!env.MCP_ACCESS_KEY,
+          token_configured: !!env.CLOUDFLARE_API_TOKEN,
+          note: "POST JSON-RPC 2.0 (MCP) to this endpoint.",
+        }, null, 2),
         { status: 200, headers: { "content-type": "application/json", ...CORS } }
       );
     }
     if (request.method !== "POST") {
       return new Response("Method Not Allowed", { status: 405, headers: CORS });
+    }
+
+    // Endpoint lock: this server can MUTATE DNS, so a public URL must not be
+    // callable by anyone who finds it. If MCP_ACCESS_KEY is set (recommended
+    // for any deploy), require it as a Bearer token or X-MCP-Key header.
+    const gate = env.MCP_ACCESS_KEY;
+    if (gate) {
+      const auth = request.headers.get("authorization") || "";
+      const provided = (/^Bearer\s+/i.test(auth) ? auth.replace(/^Bearer\s+/i, "") : "").trim()
+        || (request.headers.get("x-mcp-key") || "").trim();
+      if (provided !== gate) {
+        return new Response(JSON.stringify(rpcError(null, -32001, "unauthorized")), {
+          status: 401,
+          headers: { "content-type": "application/json", "www-authenticate": "Bearer", ...CORS },
+        });
+      }
     }
 
     let body;
