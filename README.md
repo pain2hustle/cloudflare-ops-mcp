@@ -10,6 +10,13 @@ after you explicitly approve them**. It is a small, generic developer tool with
 It ships as both a **library** (clean named exports so a host app can import and
 wrap it) and a **CLI** (`zonemend`).
 
+> **⚖️ Not affiliated with Cloudflare.** zonemender is an independent, third-party
+> open-source tool. It is **not affiliated with, endorsed by, or sponsored by
+> Cloudflare, Inc.** "Cloudflare" is a trademark of Cloudflare, Inc., used here
+> only nominatively to describe what this tool is compatible with. The software is
+> provided "AS IS" without warranty of any kind (see [LICENSE](LICENSE)). You are
+> responsible for the changes you approve and apply to your own DNS.
+
 ---
 
 ## Safety model (the whole point)
