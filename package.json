@@ -23,11 +23,24 @@
     "bimi",
     "spf",
     "email-routing",
+    "email-authentication",
+    "dns-management",
+    "cloudflare-api",
     "zone",
-    "cli"
+    "cli",
+    "mcp",
+    "ai-agent"
   ],
   "author": "Pain2HuStle",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pain2hustle/zonemender.git"
+  },
+  "homepage": "https://github.com/pain2hustle/zonemender#readme",
+  "bugs": {
+    "url": "https://github.com/pain2hustle/zonemender/issues"
+  },
   "files": [
     "src",
     "bin",
