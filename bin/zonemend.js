@@ -264,11 +264,14 @@ async function main() {
         const forwards = collectForwards(values.forward);
         const cfg = { forwards };
         if (values["catch-all"]) cfg.catchAll = values["catch-all"];
-        const res = await setupEmailRouting(client, domain, cfg, { apply: values.apply });
+        const res = await setupEmailRouting(client, domain, cfg, { apply: values.apply, force: values.force });
         log(`Email Routing plan for ${domain} (zone ${res.zone_id}):`);
         for (const item of res.plan) {
-          log(`  ${item.action}${res.apply && item.action !== "noop" ? " (APPLIED)" : ""}: ${item.address} -> ${item.to}`);
+          const tag = item.action === "blocked-unverified" ? " ⚠ BLOCKED (destination unverified)"
+            : (res.apply && item.action !== "noop" ? " (APPLIED)" : "");
+          log(`  ${item.action}${tag}: ${item.address} -> ${item.to}`);
         }
+        for (const w of res.warnings || []) log(`  ⚠ ${w}`);
         if (res.catchAll) {
           log(`  catch-all ${res.catchAll.action}${res.apply && res.catchAll.action !== "noop" ? " (APPLIED)" : ""}: * -> ${res.catchAll.to}`);
         }

@@ -130,6 +130,7 @@ const TOOLS = [
         },
         catch_all: { type: "string", description: "Optional catch-all destination address" },
         apply: { type: "boolean", description: "Default false = dry-run." },
+        force: { type: "boolean", description: "Create rules even to unverified destinations (not recommended — they stay disabled)." },
       },
       required: ["domain"],
     },
@@ -208,7 +209,7 @@ async function runTool(name, args, env) {
         client,
         domain,
         { forwards: args.forwards || [], catchAll: args.catch_all },
-        { apply: args.apply === true }
+        { apply: args.apply === true, force: args.force === true }
       );
 
     default:

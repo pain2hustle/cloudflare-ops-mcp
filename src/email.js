@@ -125,12 +125,31 @@ function ruleMatches(rule, sourceAddr) {
  * @returns {Promise<{apply:boolean, domain:string, plan:Array, catchAll:object|null, diff:object}>}
  */
 export async function setupEmailRouting(client, domain, cfg = {}, opts = {}) {
-  const { apply = false } = opts;
+  const { apply = false, force = false } = opts;
   let zone_id = opts.zoneId;
-  if (!zone_id) {
+  let account_id = opts.accountId || null;
+  if (!zone_id || !account_id) {
     const z = await resolveZone(client, domain);
-    zone_id = z.id;
+    zone_id = zone_id || z.id;
+    account_id = account_id || z.account_id;
   }
+
+  // Pull the account's verified destination addresses up front. Cloudflare keeps
+  // a forward rule DISABLED until its destination is verified, so we refuse to
+  // create a rule to an unverified address (unless forced) rather than leave a
+  // silently-dead rule behind. A destination's `verified` field is a timestamp
+  // (or null). If we can't read the list, we warn but don't hard-block.
+  const verifiedSet = new Set();
+  let destKnown = false;
+  if (account_id) {
+    try {
+      const dests = await listDestinations(client, account_id);
+      for (const d of dests) if (d && d.email && d.verified) verifiedSet.add(String(d.email).toLowerCase());
+      destKnown = true;
+    } catch { destKnown = false; }
+  }
+  const isVerified = (email) => verifiedSet.has(String(email || "").toLowerCase());
+  const warnings = [];
 
   const existingRules = await listRules(client, zone_id);
   const forwards = Array.isArray(cfg.forwards) ? cfg.forwards : [];
@@ -161,16 +180,29 @@ export async function setupEmailRouting(client, domain, cfg = {}, opts = {}) {
       action = same ? "noop" : "update";
     }
 
+    const verified = isVerified(fwd.to);
     const item = {
       action,
       address: fwd.address,
       to: fwd.to,
+      destinationVerified: verified,
       before: existing || null,
       after: body,
     };
+    if (!verified && action !== "noop") {
+      const w = destKnown
+        ? `Destination ${fwd.to} is NOT verified — Cloudflare keeps the rule disabled until its owner clicks the verification email. Add it with add_email_destination, then have them verify.`
+        : `Could not confirm ${fwd.to} is a verified destination (destination list unavailable).`;
+      item.warning = w;
+      warnings.push(w);
+    }
 
+    // Refuse to write a rule to an unverified destination unless forced — it would
+    // just create a dead, disabled rule. Verified destinations proceed normally.
     if (apply && action !== "noop") {
-      if (action === "create") {
+      if (destKnown && !verified && !force) {
+        item.action = "blocked-unverified";
+      } else if (action === "create") {
         const { result } = await client.request(
           "POST",
           `/zones/${zone_id}/email/routing/rules`,
@@ -208,32 +240,47 @@ export async function setupEmailRouting(client, domain, cfg = {}, opts = {}) {
       matchers: [{ type: "all" }],
       actions: [{ type: "forward", value: [cfg.catchAll] }],
     };
+    const caVerified = isVerified(cfg.catchAll);
     catchAll = {
       action: same ? "noop" : "update",
       to: cfg.catchAll,
+      destinationVerified: caVerified,
       before: current || null,
       after: body,
     };
+    if (!caVerified && !same) {
+      const w = destKnown
+        ? `Catch-all destination ${cfg.catchAll} is NOT verified — Cloudflare keeps it disabled until verified.`
+        : `Could not confirm catch-all ${cfg.catchAll} is a verified destination.`;
+      catchAll.warning = w;
+      warnings.push(w);
+    }
     if (apply && !same) {
-      const { result } = await client.request(
-        "PUT",
-        `/zones/${zone_id}/email/routing/rules/catch_all`,
-        body
-      );
-      catchAll.result = result;
+      if (destKnown && !caVerified && !force) {
+        catchAll.action = "blocked-unverified";
+      } else {
+        const { result } = await client.request(
+          "PUT",
+          `/zones/${zone_id}/email/routing/rules/catch_all`,
+          body
+        );
+        catchAll.result = result;
+      }
     }
   }
 
   const changes =
-    plan.filter((p) => p.action !== "noop").length +
-    (catchAll && catchAll.action !== "noop" ? 1 : 0);
+    plan.filter((p) => p.action !== "noop" && p.action !== "blocked-unverified").length +
+    (catchAll && catchAll.action !== "noop" && catchAll.action !== "blocked-unverified" ? 1 : 0);
 
   return {
     apply: Boolean(apply),
     domain,
     zone_id,
+    account_id,
     plan,
     catchAll,
+    warnings,
     diff: { changes },
   };
 }
