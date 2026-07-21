@@ -23,7 +23,11 @@ import { setupBimi } from "../src/bimi.js";
 import { setupEmailRouting } from "../src/email.js";
 import { planEmailAuth } from "../src/plan.js";
 
-const SERVER = { name: "zonemender-mcp", version: "0.1.0" };
+const SERVER = {
+  name: "zonemender-mcp",
+  title: "Cloudflare DNS & Email-Auth Fixer (zonemender)",
+  version: "0.1.0",
+};
 const PROTOCOL_FALLBACK = "2025-06-18";
 
 // ── Tool catalog (inputSchema = JSON Schema; NOTE: no token field anywhere) ──
@@ -236,6 +240,17 @@ async function handleRpc(msg, env) {
       protocolVersion: typeof requested === "string" ? requested : PROTOCOL_FALLBACK,
       capabilities: { tools: { listChanged: false } },
       serverInfo: SERVER,
+      instructions:
+        "zonemender audits and fixes a domain's Cloudflare DNS and email-authentication setup. " +
+        "Use it to: scan a Cloudflare zone (all DNS records plus parsed SPF, DMARC, BIMI, and Email Routing status); " +
+        "diagnose email deliverability and spoofing gaps; and apply targeted fixes — set or enforce a DMARC policy " +
+        "(none → quarantine → reject), publish or repair SPF, set up BIMI (your brand logo in inboxes, gated on DMARC " +
+        "enforcement), configure Email Routing forwards, or upsert any single DNS record (TXT/CNAME/MX/A/…). " +
+        "Safety: every write is DRY-RUN by default and returns a diff; nothing changes unless you pass apply=true, and " +
+        "records are never deleted without explicit confirmation. The scoped Cloudflare API token is supplied to the " +
+        "server as a secret, never as a tool argument. " +
+        "zonemender is an independent, third-party open-source tool — not affiliated with, endorsed by, or sponsored by " +
+        "Cloudflare, Inc.; \"Cloudflare\" is used nominatively to name the service this tool works with.",
     });
   }
   if (method === "ping") return rpcResult(id, {});
