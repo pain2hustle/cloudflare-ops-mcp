@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "zonemender-mcp",
+  "main": "index.js",
+  "compatibility_date": "2025-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true }
+  // Set the Cloudflare API token as a secret (never a var, never in git):
+  //   cd worker && npx wrangler secret put CLOUDFLARE_API_TOKEN
+  // Deploy:
+  //   npx wrangler deploy
+}

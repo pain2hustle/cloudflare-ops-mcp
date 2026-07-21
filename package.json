@@ -1,0 +1,37 @@
+{
+  "name": "zonemender",
+  "version": "0.1.0",
+  "description": "A standalone Cloudflare zone fixer: scan a zone, diff desired vs current DNS / Email Routing / BIMI / DMARC config, and apply fixes only after explicit approval. Zero runtime dependencies.",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "bin": {
+    "zonemend": "./bin/zonemend.js"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "cloudflare",
+    "dns",
+    "dmarc",
+    "bimi",
+    "spf",
+    "email-routing",
+    "zone",
+    "cli"
+  ],
+  "author": "Pain2HuStle",
+  "license": "MIT",
+  "files": [
+    "src",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ]
+}

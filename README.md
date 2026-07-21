@@ -1,0 +1,310 @@
+# zonemender
+
+**A standalone Cloudflare zone fixer — host apps can import it, but it needs no host to run.**
+
+`zonemender` scans a Cloudflare zone, computes a **diff** of desired vs current
+**DNS / Email Routing / BIMI / DMARC** configuration, and **applies fixes only
+after you explicitly approve them**. It is a small, generic developer tool with
+**zero runtime dependencies** (Node.js >= 18, using the built-in global `fetch`).
+
+It ships as both a **library** (clean named exports so a host app can import and
+wrap it) and a **CLI** (`zonemend`).
+
+---
+
+## Safety model (the whole point)
+
+1. **Dry-run by default.** Every mutating function takes an options object and
+   only writes when `{ apply: true }` is passed. The CLI is dry-run unless you
+   add `--apply`. A dry-run returns the *planned* change plus a before/after
+   diff and writes nothing.
+2. **Scan before write.** Apply paths re-fetch current state and return a
+   before/after diff, so you always see exactly what will change.
+3. **Never delete as a side effect.** Deleting a DNS record requires an explicit
+   `deleteDnsRecord(..., { confirm: true })` call (CLI: `--force`). An `apply`
+   never deletes anything.
+4. **Token hygiene.** The Cloudflare API token is read **only** from
+   `process.env.CLOUDFLARE_API_TOKEN`. It is never logged, never written to the
+   audit log, and never included in thrown error messages — any token-looking
+   substring is redacted defensively.
+5. **Scoped token only.** Use a least-privilege scoped API token. **Do not use
+   the Global API Key.**
+6. **BIMI precondition.** `setupBimi` first checks the domain's DMARC policy. If
+   `p` is missing or `none`, it **refuses to write in apply mode** (BIMI is not
+   honored below enforcement) unless you pass `{ force: true }`. In dry-run it
+   warns.
+7. **Audit log.** Every apply appends one JSON line to an audit log
+   (default `./zonemender-audit.log`) with
+   `{ ts, action, domain, record, before, after }` — never the token.
+
+---
+
+## Install
+
+```sh
+npm install zonemender
+# or run the CLI without installing:
+npx zonemender scan example.com
+```
+
+Requires **Node.js >= 18** (for the built-in global `fetch`). No other
+dependencies.
+
+---
+
+## Create a scoped Cloudflare API token (least privilege)
+
+1. Cloudflare dashboard → **My Profile** → **API Tokens** → **Create Token**.
+2. Choose **Create Custom Token**.
+3. Under **Permissions**, add exactly these three:
+   - **Zone** → **Zone** → **Read**
+   - **Zone** → **DNS** → **Edit**
+   - **Zone** → **Email Routing Rules** → **Edit**
+4. Under **Zone Resources**, select **Include → Specific zone →** *your domain*
+   (not "All zones").
+5. *(Recommended)* set a **TTL** and/or **Client IP Address Filtering**.
+6. **Continue → Create Token**, then copy the token value **once** (it is shown
+   only at creation; if lost, roll it).
+
+> Do **not** use the Global API Key — it has access to everything, cannot be
+> scoped or time-limited, and there is only one per account.
+
+### Provide the token
+
+Put it in your environment (never in a CLI argument or in code):
+
+```sh
+export CLOUDFLARE_API_TOKEN="your-scoped-token"
+```
+
+or copy `.env.example` to `.env` and fill it in:
+
+```sh
+cp .env.example .env
+# then load it however you prefer (e.g. `set -a; . ./.env; set +a`)
+```
+
+`zonemender` reads `CLOUDFLARE_API_TOKEN` from the environment only.
+
+---
+
+## CLI usage
+
+```
+zonemend <command> <domain> [options]
+```
+
+| Command | What it does |
+| --- | --- |
+| `scan <domain>` | Full read-only snapshot: DNS, SPF, DKIM, DMARC, BIMI, Email Routing. |
+| `plan <domain> [--inbox x@y]` | Report desired vs current email-auth posture (no writes). |
+| `dns <domain> --type T --name N --content C [--ttl n] [--proxied] [--apply]` | Upsert a DNS record (create / update / no-op). |
+| `email <domain> --forward a@b=to@c [--catch-all to@c] [--apply]` | Plan/apply Email Routing forward rules + catch-all. |
+| `dmarc <domain> --policy quarantine [--rua mailto:x] [--pct 25] [--apply]` | Change **only** the DMARC `p=` (and `rua`/`pct`), safely. |
+| `bimi <domain> --logo <url> [--vmc <url>] [--apply] [--force]` | Set `default._bimi` TXT (refuses if DMARC=`none` unless `--force`). |
+| `verify <domain>` | Verify the API token, then resolve the zone. |
+
+Global flags: `--apply` (perform the write; default is dry-run), `--force`
+(BIMI DMARC override / delete), `--audit <path>` (audit log location),
+`-h`/`--help`.
+
+**Everything is a dry-run until you add `--apply`.** BIMI needs a **hosted
+SVG Tiny-PS logo URL** that you supply via `--logo` (and, for Gmail/Apple Mail
+display, a VMC/CMC via `--vmc`).
+
+---
+
+## Worked example — three real jobs
+
+Assume a scoped token is exported and each domain is a zone in your account.
+
+### (a) Add `default._bimi` TXT to `example.com`
+
+First, dry-run (writes nothing — shows the diff):
+
+```sh
+zonemend bimi example.com --logo https://example.com/bimi/logo.svg
+```
+
+```
+BIMI for example.com (DMARC p=quarantine, enforcing=true):
+  new record: v=BIMI1; l=https://example.com/bimi/logo.svg
+  action: create (dry-run)
+  record: TXT default._bimi.example.com
+  - before: (record does not exist)
+  + after:  content="v=BIMI1; l=https://example.com/bimi/logo.svg" ttl=1
+  warn: No VMC/CMC supplied (a=). Gmail and Apple Mail require a VMC/CMC to display the logo; Yahoo/AOL do not.
+
+Dry-run only. Re-run with --apply to write this change.
+```
+
+Then apply:
+
+```sh
+zonemend bimi example.com --logo https://example.com/bimi/logo.svg --apply
+```
+
+> If `example.com`'s DMARC were still at `p=none`, the apply would be **blocked**
+> with an error telling you to raise DMARC first (or pass `--force`). Fix DMARC,
+> then set BIMI.
+
+### (b) Add `default._bimi` TXT to `example.org`
+
+Dry-run:
+
+```sh
+zonemend bimi example.org --logo https://example.org/bimi/logo.svg
+```
+
+Apply once the diff looks right:
+
+```sh
+zonemend bimi example.org --logo https://example.org/bimi/logo.svg --apply
+```
+
+(For broad display in Gmail/Apple Mail, host a VMC/CMC and add
+`--vmc https://example.org/bimi/vmc.pem`.)
+
+### (c) Change `_dmarc.example.org` from `p=none` to `p=quarantine`
+
+Dry-run first — note it changes **only** `p`, preserving your existing `rua`:
+
+```sh
+zonemend dmarc example.org --policy quarantine --rua mailto:dmarc@example.org --pct 25
+```
+
+```
+DMARC none -> quarantine for example.org:
+  new record: v=DMARC1; p=quarantine; rua=mailto:dmarc@example.org; pct=25
+  action: update (dry-run)
+  record: TXT _dmarc.example.org
+  - before: content="\"v=DMARC1; p=none; rua=mailto:dmarc@example.org\"" ttl=1
+  + after:  content="\"v=DMARC1; p=quarantine; rua=mailto:dmarc@example.org; pct=25\"" ttl=1
+  changed fields: content
+
+Dry-run only. Re-run with --apply to write this change.
+```
+
+Then apply:
+
+```sh
+zonemend dmarc example.org --policy quarantine --rua mailto:dmarc@example.org --pct 25 --apply
+```
+
+> **Ramp safely.** Only flip to `quarantine` after `p=none` + `rua` reports show
+> all your legitimate mail is authenticating with **alignment**. Then widen
+> `--pct 25 → 50 → 100` over a couple of weeks before ever considering
+> `p=reject`. `pct` is honored today but is being removed in the in-progress
+> DMARCbis revision — treat it as current best practice, not forever.
+
+---
+
+## Library usage (host apps)
+
+`zonemender` exposes clean named exports so a host app can import and wrap it
+(add your own auth, approval UI, or multi-tenant token vault) — but it has
+**no dependency on any host** and runs perfectly standalone.
+
+```js
+import {
+  CloudflareClient,
+  scanZone,
+  applyDnsRecord,
+  setDmarcPolicy,
+  setupBimi,
+  setupEmailRouting,
+  planEmailAuth,
+  appendAudit,
+} from "zonemender";
+
+const client = new CloudflareClient(); // reads CLOUDFLARE_API_TOKEN from env
+// (you may also inject { token, fetch } — useful for tests)
+
+// Read-only snapshot:
+const snapshot = await scanZone(client, "example.com");
+
+// Plan a DMARC flip (dry-run — writes nothing):
+const plan = await setDmarcPolicy(client, "example.com", "quarantine", {
+  rua: "mailto:dmarc@example.com",
+  pct: 25,
+});
+
+// Apply it, then record the change yourself (you supply the timestamp):
+const applied = await setDmarcPolicy(
+  client,
+  "example.com",
+  "quarantine",
+  { rua: "mailto:dmarc@example.com", pct: 25 },
+  { apply: true }
+);
+appendAudit("./zonemender-audit.log", {
+  ts: new Date().toISOString(),
+  action: "dmarc.policy",
+  domain: "example.com",
+  record: applied.record,
+  before: applied.before,
+  after: applied.after,
+});
+```
+
+Every mutating export is dry-run unless you pass `{ apply: true }`, and pure
+logic never calls `Date.now()` — you (or the CLI) supply audit timestamps.
+
+### Public exports
+
+- `CloudflareClient`, `CloudflareError`, `redactToken`
+- `resolveZoneId`, `resolveZone`, `scanZone`
+- `listRecords`, `findRecord`, `applyDnsRecord`, `deleteDnsRecord`
+- `getRoutingStatus`, `enableRouting`, `listDestinations`, `addDestination`,
+  `listRules`, `getCatchAll`, `setupEmailRouting`
+- `parseDmarc`, `buildDmarc`, `parseSpf`, `getDmarc`, `setDmarcPolicy`,
+  `quoteTxt`, `unquoteTxt`
+- `parseBimi`, `buildBimi`, `validateBimiSvgUrl`, `setupBimi`
+- `planEmailAuth`
+- `appendAudit`, `AUDIT_DEFAULT_PATH`
+
+---
+
+## Embedding in a platform
+
+`zonemender` is a generic, open tool. A larger platform can `import` it to
+automate zone hygiene for its users (wrapping it with per-account tokens and an
+approval step), but it is completely standalone — the library and CLI run on
+their own with nothing but a scoped Cloudflare token.
+
+---
+
+## Optional: run it as a remote MCP server
+
+`worker/` is an optional [Model Context Protocol](https://modelcontextprotocol.io)
+server (a Cloudflare Worker) that exposes the same engine as tools over a URL, so
+any MCP client — an agent, Claude, Cursor — can `scan_zone`, `plan_email_auth`,
+`set_dmarc_policy`, `setup_bimi`, etc. by pointing at it.
+
+Two deliberate hardening choices:
+
+- **The token is a Worker secret, never a tool parameter** — so it never travels
+  through an MCP client's logs or an agent's transcript.
+- **Every mutating tool is dry-run by default**; the caller must pass
+  `apply: true` after seeing the diff. BIMI keeps its DMARC precondition.
+
+```sh
+cd worker
+npx wrangler secret put CLOUDFLARE_API_TOKEN   # paste the scoped token once
+npx wrangler deploy
+```
+
+The core library has **zero dependencies**; the Worker is an optional surface —
+you never need it to use the CLI.
+
+---
+
+## Development
+
+```sh
+npm test        # node --test (mock fetch, no live network calls)
+```
+
+## License
+
+MIT © 2026 Pain2HuStle
