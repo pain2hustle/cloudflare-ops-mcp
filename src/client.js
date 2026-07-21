@@ -69,7 +69,7 @@ export class CloudflareClient {
     // is never logged.
     this._token =
       token !== undefined ? token : process.env.CLOUDFLARE_API_TOKEN;
-    this._fetch = fetchImpl || globalThis.fetch;
+    this._fetch = fetchImpl || globalThis.fetch.bind(globalThis);
     this.baseUrl = baseUrl || CF_BASE;
 
     if (typeof this._fetch !== "function") {
@@ -111,7 +111,11 @@ export class CloudflareClient {
 
     let res;
     try {
-      res = await this._fetch(url, init);
+      // Call fetch as a BARE function (this = undefined). Calling it as a method
+      // (this._fetch(...)) makes `this` the client, which the Cloudflare Workers
+      // runtime rejects with "Illegal invocation".
+      const doFetch = this._fetch;
+      res = await doFetch(url, init);
     } catch (err) {
       // Network-level failure: scrub anything that might carry the token.
       throw new CloudflareError(
