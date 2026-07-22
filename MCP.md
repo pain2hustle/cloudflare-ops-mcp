@@ -1,6 +1,6 @@
 # ZoneMender MCP Server
 
-ZoneMender includes an unofficial Cloudflare DNS MCP server for AI agents. It is built to run as a Cloudflare Worker and deploy with Wrangler.
+ZoneMender includes an unofficial Cloudflare DNS MCP server for AI agents. It is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC. It is built to run as a Cloudflare Worker and deploy with Wrangler.
 
 ## What it does
 
@@ -12,7 +12,7 @@ ZoneMender includes an unofficial Cloudflare DNS MCP server for AI agents. It is
 
 ## Official status
 
-ZoneMender is independent open-source software. It is not made by Cloudflare, not endorsed by Cloudflare, and not sponsored by Cloudflare. It is compatible with Cloudflare APIs and Wrangler.
+ZoneMender is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC. It is independent open-source software. It is not made by Cloudflare, not endorsed by Cloudflare, and not sponsored by Cloudflare. It is compatible with Cloudflare APIs and Wrangler.
 
 ## Wrangler deploy
 
@@ -32,3 +32,10 @@ Authorization: Bearer <MCP_ACCESS_KEY>
 ```
 
 Use dry-run tools first, inspect the diff, then apply only when the owner approves.
+
+## Contact
+
+- WALO: https://walohq.com
+- Service Pricer: https://servicepricer.app
+- GitHub: https://github.com/pain2hustle/zonemender
+- Contact: support@walohq.com

@@ -12,7 +12,7 @@ It works three ways:
 
 ZoneMender is especially useful for email authentication cleanup, including SPF, DMARC enforcement, BIMI records, Cloudflare Email Routing, and repeatable DNS hygiene across many Cloudflare zones.
 
-> **Unofficial Cloudflare tool.** ZoneMender is independent, third-party, open-source software. It is **not affiliated with, endorsed by, sponsored by, or made by Cloudflare, Inc.** "Cloudflare" and "Wrangler" are referenced only to describe compatibility with Cloudflare's platform and official developer tooling. You are responsible for every DNS, Email Routing, DMARC, BIMI, SPF, or Worker change you approve and apply.
+> **Unofficial Cloudflare tool.** ZoneMender is made by **AMH - Artificial Mind Hive**, operated by **Service Pricer LLC**. It is independent, third-party, open-source software. It is **not affiliated with, endorsed by, sponsored by, or made by Cloudflare, Inc.** "Cloudflare" and "Wrangler" are referenced only to describe compatibility with Cloudflare's platform and official developer tooling. You are responsible for every DNS, Email Routing, DMARC, BIMI, SPF, or Worker change you approve and apply.
 
 ---
 
@@ -331,6 +331,17 @@ you never need it to use the CLI.
 ```sh
 npm test        # node --test (mock fetch, no live network calls)
 ```
+
+## Maker
+
+Made by AMH - Artificial Mind Hive, operated by Service Pricer LLC.
+
+## Contact / company
+
+- WALO: https://walohq.com
+- Service Pricer: https://servicepricer.app
+- GitHub: https://github.com/pain2hustle/zonemender
+- Contact: support@walohq.com
 
 ## License
 

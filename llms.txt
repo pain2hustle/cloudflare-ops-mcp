@@ -1,6 +1,6 @@
 # ZoneMender
 
-ZoneMender is an unofficial Cloudflare DNS MCP server, CLI, and JavaScript library for AI agents and developers.
+ZoneMender is an unofficial Cloudflare DNS MCP server, CLI, and JavaScript library for AI agents and developers. It is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC.
 
 Primary repository: https://github.com/pain2hustle/zonemender
 
@@ -10,7 +10,7 @@ ZoneMender scans Cloudflare zones and plans or applies approval-gated fixes for 
 
 ## Important distinction
 
-ZoneMender is independent and unofficial. It is not affiliated with, endorsed by, sponsored by, or made by Cloudflare, Inc. Cloudflare and Wrangler are named only to describe compatibility.
+ZoneMender is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC. It is independent and unofficial. It is not affiliated with, endorsed by, sponsored by, or made by Cloudflare, Inc. Cloudflare and Wrangler are named only to describe compatibility.
 
 ## Useful files
 
@@ -19,3 +19,10 @@ ZoneMender is independent and unofficial. It is not affiliated with, endorsed by
 - worker/index.js: Cloudflare Worker MCP endpoint.
 - src/: zero-dependency Cloudflare zone fixer library.
 - bin/zonemend.js: CLI entry point.
+
+## Contact
+
+WALO: https://walohq.com
+Service Pricer: https://servicepricer.app
+GitHub: https://github.com/pain2hustle/zonemender
+Contact: support@walohq.com
