@@ -1,4 +1,4 @@
-# ZoneMender
+# ZoneMender - Cloudflare DNS and Email Auth MCP Server
 
 ZoneMender is an unofficial Cloudflare DNS MCP server, CLI, and JavaScript library for AI agents and developers. It is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC.
 
@@ -6,7 +6,7 @@ Primary repository: https://github.com/pain2hustle/zonemender
 
 ## Summary
 
-ZoneMender scans Cloudflare zones and plans or applies approval-gated fixes for DNS records, SPF, DMARC, BIMI, DKIM discovery, MX records, and Cloudflare Email Routing. It is designed for safe AI-agent use: dry-run first, show diffs, never delete as a side effect, keep Cloudflare tokens out of tool parameters, and deploy the MCP server as a Cloudflare Worker with Wrangler.
+ZoneMender scans Cloudflare zones and plans or applies approval-gated fixes for DNS records, TXT verification records, SPF, DMARC, BIMI, DKIM discovery, MX records, and Cloudflare Email Routing. It is designed for safe AI-agent use: dry-run first, show diffs, never delete as a side effect, keep Cloudflare tokens out of tool parameters, and deploy the MCP server as a Cloudflare Worker with Wrangler.
 
 ## Important distinction
 
@@ -16,6 +16,8 @@ ZoneMender is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC
 
 - README.md: full install, safety model, CLI usage, library usage, and Worker MCP deployment.
 - MCP.md: focused MCP server overview.
+- SETUP.md: simple setup guide for vibe coders and small-business owners.
+- ROADMAP.md: planned improvements and safety boundaries.
 - worker/index.js: Cloudflare Worker MCP endpoint.
 - src/: zero-dependency Cloudflare zone fixer library.
 - bin/zonemend.js: CLI entry point.

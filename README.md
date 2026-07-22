@@ -1,4 +1,4 @@
-# ZoneMender - Unofficial Cloudflare DNS MCP Server for AI Agents
+# ZoneMender - Unofficial Cloudflare DNS, Email Auth, BIMI, DMARC, SPF, Email Routing & MCP Server for AI Agents
 
 **An independent Cloudflare DNS, DMARC, BIMI, SPF, Email Routing, and Wrangler-friendly MCP toolkit for developers, operators, and AI agents.**
 
@@ -10,11 +10,32 @@ It works three ways:
 - **Library**: import the zero-dependency engine into your own app.
 - **Remote MCP Worker**: deploy the included Worker with Wrangler so Claude, Codex, Cursor, or another MCP client can call Cloudflare DNS tools through a locked endpoint.
 
-ZoneMender is especially useful for email authentication cleanup, including SPF, DMARC enforcement, BIMI records, Cloudflare Email Routing, and repeatable DNS hygiene across many Cloudflare zones.
+ZoneMender is especially useful for Cloudflare operators who need repeatable DNS hygiene across many zones: SPF cleanup, DMARC enforcement, BIMI records, MX checks, DKIM discovery, Cloudflare Email Routing, TXT verification records, safe DNS upserts, and audit logs for every approved write.
 
 > **Unofficial Cloudflare tool.** ZoneMender is made by **AMH - Artificial Mind Hive**, operated by **Service Pricer LLC**. It is independent, third-party, open-source software. It is **not affiliated with, endorsed by, sponsored by, or made by Cloudflare, Inc.** "Cloudflare" and "Wrangler" are referenced only to describe compatibility with Cloudflare's platform and official developer tooling. You are responsible for every DNS, Email Routing, DMARC, BIMI, SPF, or Worker change you approve and apply.
 
 ---
+
+## What ZoneMender handles
+
+ZoneMender is focused on the Cloudflare zone tasks that regularly break launches, email trust, brand display, and AI-agent workflows:
+
+- DNS record scan, lookup, create, update, no-op detection, and guarded delete.
+- SPF detection and planning so you do not accidentally create multiple SPF records.
+- DMARC parsing and policy updates that only change the fields you asked for.
+- BIMI TXT setup with a DMARC enforcement gate.
+- DKIM discovery so the report can tell whether sender keys exist.
+- MX and Cloudflare Email Routing checks.
+- Email Routing destination/rule setup with verified-destination protection.
+- Audit logs for applied changes.
+- MCP endpoint deployment on Cloudflare Workers with Wrangler secrets.
+- AI-agent safety defaults: dry-run first, diff display, no token in tool args, no accidental deletes.
+
+This is not meant to replace every Cloudflare feature. It is the narrow, safe lane for the zone/email-auth work an operator or AI agent should be allowed to do.
+
+## Examples are operator recipes
+
+The examples below are intentionally direct. They are not toy examples. They show the exact dry-run -> review -> apply pattern users should follow when fixing real domains.
 
 ## Why build this with Wrangler?
 
@@ -57,6 +78,10 @@ Use the plain CLI when you only need one local terminal to scan or fix a zone.
    `{ ts, action, domain, record, before, after }` — never the token.
 
 ---
+
+## Quick setup
+
+For the fastest path, start with [SETUP.md](SETUP.md). It explains the CLI path, the Wrangler-hosted MCP path, and the phone-first WALO workflow. See [ROADMAP.md](ROADMAP.md) for the next upgrades.
 
 ## Install
 
@@ -312,9 +337,10 @@ Three deliberate hardening choices:
   `apply: true` after seeing the diff. BIMI keeps its DMARC precondition.
 
 ```sh
+npm run worker:generate-key                 # creates a strong MCP_ACCESS_KEY
 cd worker
 npx wrangler secret put CLOUDFLARE_API_TOKEN   # the scoped CF token the tools use
-npx wrangler secret put MCP_ACCESS_KEY         # a random string that locks this URL
+npx wrangler secret put MCP_ACCESS_KEY         # paste generated zm_ key
 npx wrangler deploy
 ```
 

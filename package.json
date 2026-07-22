@@ -1,7 +1,7 @@
 {
   "name": "zonemender",
   "version": "0.1.0",
-  "description": "Unofficial Cloudflare DNS MCP server and Wrangler-friendly zone fixer for AI agents: SPF, DMARC, BIMI, Email Routing, and approval-gated DNS changes.",
+  "description": "Unofficial Cloudflare DNS and email-auth MCP server for AI agents: DMARC, SPF, BIMI, Email Routing, Wrangler, and safe DNS fixes.",
   "type": "module",
   "main": "src/index.js",
   "exports": {
@@ -11,12 +11,20 @@
     "zonemend": "./bin/zonemend.js"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "worker:dev": "cd worker && npx wrangler dev",
+    "worker:deploy": "cd worker && npx wrangler deploy",
+    "worker:tail": "cd worker && npx wrangler tail",
+    "worker:set-token": "cd worker && npx wrangler secret put CLOUDFLARE_API_TOKEN",
+    "worker:set-key": "cd worker && npx wrangler secret put MCP_ACCESS_KEY",
+    "registry:validate": "mcp-publisher validate",
+    "worker:generate-key": "node scripts/generate-mcp-key.mjs"
   },
   "engines": {
     "node": ">=18"
   },
   "keywords": [
+    "cloudflare-email-auth",
     "cloudflare-mcp",
     "cloudflare-dns-mcp",
     "cloudflare",
@@ -57,7 +65,10 @@
     "MCP.md",
     "llms.txt",
     "server.json",
-    "LICENSE"
+    "LICENSE",
+    "scripts/generate-mcp-key.mjs",
+    "SETUP.md",
+    "ROADMAP.md"
   ],
   "mcpName": "io.github.pain2hustle/zonemender",
   "funding": {

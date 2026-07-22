@@ -1,6 +1,16 @@
-# ZoneMender MCP Server
+# ZoneMender - Cloudflare DNS and Email Auth MCP Server
 
 ZoneMender includes an unofficial Cloudflare DNS MCP server for AI agents. It is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC. It is built to run as a Cloudflare Worker and deploy with Wrangler.
+
+## Tool lanes
+
+- Cloudflare zone scan.
+- DNS record upsert.
+- DMARC policy planning and apply.
+- BIMI setup with DMARC precondition.
+- SPF, DKIM, MX, and Email Routing diagnostics.
+- Email Routing rule setup.
+- Approval-gated writes and audit logging.
 
 ## What it does
 

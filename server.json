@@ -1,8 +1,8 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.pain2hustle/zonemender",
-  "title": "ZoneMender - Unofficial Cloudflare DNS MCP Server",
-  "description": "Unofficial Cloudflare DNS MCP server for AI agents with approval-gated fixes.",
+  "title": "ZoneMender - Cloudflare DNS and Email Auth MCP Server",
+  "description": "Unofficial Cloudflare DNS/email-auth MCP server with approval-gated fixes.",
   "version": "0.1.0",
   "repository": {
     "url": "https://github.com/pain2hustle/zonemender",
