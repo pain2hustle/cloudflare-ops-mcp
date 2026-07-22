@@ -1,0 +1,50 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.pain2hustle/zonemender",
+  "title": "ZoneMender - Unofficial Cloudflare DNS MCP Server",
+  "description": "Unofficial Cloudflare DNS MCP server and Wrangler-friendly zone fixer for AI agents. Scans and approval-gates DNS, SPF, DMARC, BIMI, MX, DKIM discovery, and Cloudflare Email Routing changes.",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/pain2hustle/zonemender",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://zonemender-mcp.{workers_subdomain}.workers.dev",
+      "variables": {
+        "workers_subdomain": {
+          "description": "Your Cloudflare Workers subdomain after deploying worker/ with Wrangler.",
+          "isRequired": true
+        }
+      },
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer token for MCP_ACCESS_KEY configured as a Worker secret.",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "zonemender",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "CLOUDFLARE_API_TOKEN",
+          "description": "Scoped Cloudflare API token with Zone Read, DNS Edit, and Email Routing Rules Edit permissions. Never use a Global API Key.",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

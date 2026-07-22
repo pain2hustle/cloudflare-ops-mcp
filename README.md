@@ -1,22 +1,34 @@
-# zonemender
+# ZoneMender - Unofficial Cloudflare DNS MCP Server for AI Agents
 
-**A standalone Cloudflare zone fixer — host apps can import it, but it needs no host to run.**
+**An independent Cloudflare DNS, DMARC, BIMI, SPF, Email Routing, and Wrangler-friendly MCP toolkit for developers, operators, and AI agents.**
 
-`zonemender` scans a Cloudflare zone, computes a **diff** of desired vs current
-**DNS / Email Routing / BIMI / DMARC** configuration, and **applies fixes only
-after you explicitly approve them**. It is a small, generic developer tool with
-**zero runtime dependencies** (Node.js >= 18, using the built-in global `fetch`).
+ZoneMender scans a Cloudflare zone, computes a **diff** of desired vs current **DNS / Email Routing / BIMI / DMARC / SPF** configuration, and **applies fixes only after explicit approval**. It is built for people who want an AI agent to help with Cloudflare safely: scan first, show the plan, then write only when the owner approves.
 
-It ships as both a **library** (clean named exports so a host app can import and
-wrap it) and a **CLI** (`zonemend`).
+It works three ways:
 
-> **⚖️ Not affiliated with Cloudflare.** zonemender is an independent, third-party
-> open-source tool. It is **not affiliated with, endorsed by, or sponsored by
-> Cloudflare, Inc.** "Cloudflare" is a trademark of Cloudflare, Inc., used here
-> only nominatively to describe what this tool is compatible with. The software is
-> provided "AS IS" without warranty of any kind (see [LICENSE](LICENSE)). You are
-> responsible for the changes you approve and apply to your own DNS.
+- **CLI**: run `zonemend` locally with a scoped Cloudflare token.
+- **Library**: import the zero-dependency engine into your own app.
+- **Remote MCP Worker**: deploy the included Worker with Wrangler so Claude, Codex, Cursor, or another MCP client can call Cloudflare DNS tools through a locked endpoint.
 
+ZoneMender is especially useful for email authentication cleanup, including SPF, DMARC enforcement, BIMI records, Cloudflare Email Routing, and repeatable DNS hygiene across many Cloudflare zones.
+
+> **Unofficial Cloudflare tool.** ZoneMender is independent, third-party, open-source software. It is **not affiliated with, endorsed by, sponsored by, or made by Cloudflare, Inc.** "Cloudflare" and "Wrangler" are referenced only to describe compatibility with Cloudflare's platform and official developer tooling. You are responsible for every DNS, Email Routing, DMARC, BIMI, SPF, or Worker change you approve and apply.
+
+---
+
+## Why build this with Wrangler?
+
+Wrangler is Cloudflare's official developer CLI. ZoneMender can run without Wrangler as a local CLI/library, but Wrangler is the right path when you want a remote MCP server because it deploys the Worker, stores secrets, tails logs, and manages Cloudflare bindings from the same toolchain Cloudflare documents.
+
+Use Wrangler when you want:
+
+- a hosted MCP endpoint for agents and teammates;
+- Worker secrets for `CLOUDFLARE_API_TOKEN` and `MCP_ACCESS_KEY`;
+- Cloudflare Pages/Workers deployment checks;
+- observability through Cloudflare logs;
+- a repeatable production setup instead of local-only scripts.
+
+Use the plain CLI when you only need one local terminal to scan or fix a zone.
 ---
 
 ## Safety model (the whole point)
@@ -281,7 +293,7 @@ their own with nothing but a scoped Cloudflare token.
 
 ---
 
-## Optional: run it as a remote MCP server
+## Remote MCP server for Cloudflare DNS agents
 
 `worker/` is an optional [Model Context Protocol](https://modelcontextprotocol.io)
 server (a Cloudflare Worker) that exposes the same engine as tools over a URL, so

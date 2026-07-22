@@ -1,7 +1,7 @@
 {
   "name": "zonemender",
   "version": "0.1.0",
-  "description": "A standalone Cloudflare zone fixer: scan a zone, diff desired vs current DNS / Email Routing / BIMI / DMARC config, and apply fixes only after explicit approval. Zero runtime dependencies.",
+  "description": "Unofficial Cloudflare DNS MCP server and Wrangler-friendly zone fixer for AI agents: SPF, DMARC, BIMI, Email Routing, and approval-gated DNS changes.",
   "type": "module",
   "main": "src/index.js",
   "exports": {
@@ -17,19 +17,26 @@
     "node": ">=18"
   },
   "keywords": [
+    "cloudflare-mcp",
+    "cloudflare-dns-mcp",
     "cloudflare",
+    "wrangler",
+    "mcp-server",
+    "model-context-protocol",
+    "ai-agent",
     "dns",
+    "dns-management",
     "dmarc",
     "bimi",
     "spf",
+    "dkim",
     "email-routing",
     "email-authentication",
-    "dns-management",
     "cloudflare-api",
-    "zone",
-    "cli",
-    "mcp",
-    "ai-agent"
+    "workers",
+    "cloudflare-workers",
+    "zone-fixer",
+    "approval-gated"
   ],
   "author": "Pain2HuStle",
   "license": "MIT",
@@ -44,7 +51,13 @@
   "files": [
     "src",
     "bin",
+    "worker/index.js",
+    "worker/wrangler.jsonc",
     "README.md",
+    "MCP.md",
+    "llms.txt",
+    "server.json",
     "LICENSE"
-  ]
+  ],
+  "mcpName": "io.github.pain2hustle/zonemender"
 }
