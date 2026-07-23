@@ -31,6 +31,57 @@ cd worker
 npx wrangler secret put MCP_ACCESS_KEY
 ```
 
+
+## Phone-only Git and WALO workflow
+
+This is the no-PC lane for a builder using ChatGPT, Claude, Codex, or another agent from a phone.
+
+<table>
+<tr>
+<td>
+
+**1. Inspect from the phone**
+
+The user asks a phone AI assistant to inspect a GitHub repo, write a fix plan, or produce a small code/document change. The assistant should return the exact repo, file path, change summary, and risk notes.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**2. Send to WALO**
+
+The user sends the approved request to WALO in chat. WALO uses the user's connected GitHub account to stage a branch or commit, and the connected Cloudflare account to verify or deploy when that action is authorized.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**3. ZoneMender handles Cloudflare safely**
+
+For DNS, DMARC, BIMI, SPF, MX, or Email Routing work, WALO calls ZoneMender. ZoneMender scans first, returns a diff, and writes only after explicit approval.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**4. Proof comes back to chat**
+
+After apply/deploy, WALO should send the commit, changed files, live URL, 200/404 checks, and any warnings back to the phone chat so the user can keep moving without opening a PC.
+
+</td>
+</tr>
+</table>
+
+What still has to be real:
+
+- GitHub must be connected by OAuth or a scoped token before repo writes.
+- Cloudflare must be connected by OAuth or a scoped API token before DNS or deploy writes.
+- Sensitive actions need approval gates: DNS, deploys, public posts, payments, and production code writes.
+- If a connector is not connected, WALO should say what is missing instead of pretending the action ran.
+
 ## Fast local CLI
 
 Use this when you are fixing your own domain from your terminal.

@@ -52,6 +52,52 @@ Use Wrangler when you want:
 Use the plain CLI when you only need one local terminal to scan or fix a zone.
 ---
 
+## Current release notes
+
+<table>
+<tr>
+<td>
+
+**Agent-safe Cloudflare writes**
+
+ZoneMender keeps the write path narrow: scan the zone, show the diff, wait for explicit approval, then apply only the requested DNS, DMARC, BIMI, SPF, or Email Routing change.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Worker MCP endpoint hardening**
+
+The hosted MCP lane is built for Cloudflare Workers and Wrangler. The Cloudflare API token stays in Worker secrets, the public endpoint requires an MCP access key, and mutating tools stay dry-run unless `apply: true` is sent.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Email trust diagnostics**
+
+The scanner reports SPF, DKIM discovery, DMARC policy, BIMI readiness, MX records, and Cloudflare Email Routing status so an agent or operator can see what is missing before touching production DNS.
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Other highlights**
+
+- Zero-dependency core library for host apps and CLI use.
+- Scoped Cloudflare token guidance instead of Global API Key usage.
+- Audit logging for applied changes, with token redaction.
+- WALO-ready phone workflow documented for non-traditional builders.
+
+</td>
+</tr>
+</table>
+
+---
+
 ## Safety model (the whole point)
 
 1. **Dry-run by default.** Every mutating function takes an options object and
@@ -65,7 +111,7 @@ Use the plain CLI when you only need one local terminal to scan or fix a zone.
    never deletes anything.
 4. **Token hygiene.** The Cloudflare API token is read **only** from
    `process.env.CLOUDFLARE_API_TOKEN`. It is never logged, never written to the
-   audit log, and never included in thrown error messages — any token-looking
+   audit log, and never included in thrown error messages - any token-looking
    substring is redacted defensively.
 5. **Scoped token only.** Use a least-privilege scoped API token. **Do not use
    the Global API Key.**
@@ -75,7 +121,7 @@ Use the plain CLI when you only need one local terminal to scan or fix a zone.
    warns.
 7. **Audit log.** Every apply appends one JSON line to an audit log
    (default `./zonemender-audit.log`) with
-   `{ ts, action, domain, record, before, after }` — never the token.
+   `{ ts, action, domain, record, before, after }` - never the token.
 
 ---
 
@@ -98,19 +144,19 @@ dependencies.
 
 ## Create a scoped Cloudflare API token (least privilege)
 
-1. Cloudflare dashboard → **My Profile** → **API Tokens** → **Create Token**.
+1. Cloudflare dashboard -> **My Profile** -> **API Tokens** -> **Create Token**.
 2. Choose **Create Custom Token**.
 3. Under **Permissions**, add exactly these three:
-   - **Zone** → **Zone** → **Read**
-   - **Zone** → **DNS** → **Edit**
-   - **Zone** → **Email Routing Rules** → **Edit**
-4. Under **Zone Resources**, select **Include → Specific zone →** *your domain*
+   - **Zone** -> **Zone** -> **Read**
+   - **Zone** -> **DNS** -> **Edit**
+   - **Zone** -> **Email Routing Rules** -> **Edit**
+4. Under **Zone Resources**, select **Include -> Specific zone ->** *your domain*
    (not "All zones").
 5. *(Recommended)* set a **TTL** and/or **Client IP Address Filtering**.
-6. **Continue → Create Token**, then copy the token value **once** (it is shown
+6. **Continue -> Create Token**, then copy the token value **once** (it is shown
    only at creation; if lost, roll it).
 
-> Do **not** use the Global API Key — it has access to everything, cannot be
+> Do **not** use the Global API Key - it has access to everything, cannot be
 > scoped or time-limited, and there is only one per account.
 
 ### Provide the token
@@ -158,13 +204,13 @@ display, a VMC/CMC via `--vmc`).
 
 ---
 
-## Worked example — three real jobs
+## Worked example - three real jobs
 
 Assume a scoped token is exported and each domain is a zone in your account.
 
 ### (a) Add `default._bimi` TXT to `example.com`
 
-First, dry-run (writes nothing — shows the diff):
+First, dry-run (writes nothing - shows the diff):
 
 ```sh
 zonemend bimi example.com --logo https://example.com/bimi/logo.svg
@@ -211,7 +257,7 @@ zonemend bimi example.org --logo https://example.org/bimi/logo.svg --apply
 
 ### (c) Change `_dmarc.example.org` from `p=none` to `p=quarantine`
 
-Dry-run first — note it changes **only** `p`, preserving your existing `rua`:
+Dry-run first - note it changes **only** `p`, preserving your existing `rua`:
 
 ```sh
 zonemend dmarc example.org --policy quarantine --rua mailto:dmarc@example.org --pct 25
@@ -237,16 +283,16 @@ zonemend dmarc example.org --policy quarantine --rua mailto:dmarc@example.org --
 
 > **Ramp safely.** Only flip to `quarantine` after `p=none` + `rua` reports show
 > all your legitimate mail is authenticating with **alignment**. Then widen
-> `--pct 25 → 50 → 100` over a couple of weeks before ever considering
+> `--pct 25 -> 50 -> 100` over a couple of weeks before ever considering
 > `p=reject`. `pct` is honored today but is being removed in the in-progress
-> DMARCbis revision — treat it as current best practice, not forever.
+> DMARCbis revision - treat it as current best practice, not forever.
 
 ---
 
 ## Library usage (host apps)
 
 `zonemender` exposes clean named exports so a host app can import and wrap it
-(add your own auth, approval UI, or multi-tenant token vault) — but it has
+(add your own auth, approval UI, or multi-tenant token vault) - but it has
 **no dependency on any host** and runs perfectly standalone.
 
 ```js
@@ -262,12 +308,12 @@ import {
 } from "zonemender";
 
 const client = new CloudflareClient(); // reads CLOUDFLARE_API_TOKEN from env
-// (you may also inject { token, fetch } — useful for tests)
+// (you may also inject { token, fetch } - useful for tests)
 
 // Read-only snapshot:
 const snapshot = await scanZone(client, "example.com");
 
-// Plan a DMARC flip (dry-run — writes nothing):
+// Plan a DMARC flip (dry-run - writes nothing):
 const plan = await setDmarcPolicy(client, "example.com", "quarantine", {
   rua: "mailto:dmarc@example.com",
   pct: 25,
@@ -292,7 +338,7 @@ appendAudit("./zonemender-audit.log", {
 ```
 
 Every mutating export is dry-run unless you pass `{ apply: true }`, and pure
-logic never calls `Date.now()` — you (or the CLI) supply audit timestamps.
+logic never calls `Date.now()` - you (or the CLI) supply audit timestamps.
 
 ### Public exports
 
@@ -313,7 +359,7 @@ logic never calls `Date.now()` — you (or the CLI) supply audit timestamps.
 
 `zonemender` is a generic, open tool. A larger platform can `import` it to
 automate zone hygiene for its users (wrapping it with per-account tokens and an
-approval step), but it is completely standalone — the library and CLI run on
+approval step), but it is completely standalone - the library and CLI run on
 their own with nothing but a scoped Cloudflare token.
 
 ---
@@ -322,17 +368,17 @@ their own with nothing but a scoped Cloudflare token.
 
 `worker/` is an optional [Model Context Protocol](https://modelcontextprotocol.io)
 server (a Cloudflare Worker) that exposes the same engine as tools over a URL, so
-any MCP client — an agent, Claude, Cursor — can `scan_zone`, `plan_email_auth`,
+any MCP client - an agent, Claude, Cursor - can `scan_zone`, `plan_email_auth`,
 `set_dmarc_policy`, `setup_bimi`, etc. by pointing at it.
 
 Three deliberate hardening choices:
 
-- **The token is a Worker secret, never a tool parameter** — so it never travels
+- **The token is a Worker secret, never a tool parameter** - so it never travels
   through an MCP client's logs or an agent's transcript.
 - **The endpoint itself is locked.** Because these tools can mutate DNS, a public
   Worker URL must not be callable by anyone who finds it. Set `MCP_ACCESS_KEY` and
   the server rejects any request without `Authorization: Bearer <MCP_ACCESS_KEY>`
-  (or an `X-MCP-Key` header). Deploying without it leaves the endpoint open — don't.
+  (or an `X-MCP-Key` header). Deploying without it leaves the endpoint open - don't.
 - **Every mutating tool is dry-run by default**; the caller must pass
   `apply: true` after seeing the diff. BIMI keeps its DMARC precondition.
 
@@ -347,7 +393,7 @@ npx wrangler deploy
 Point your MCP client at the deployed URL and add the header
 `Authorization: Bearer <MCP_ACCESS_KEY>`.
 
-The core library has **zero dependencies**; the Worker is an optional surface —
+The core library has **zero dependencies**; the Worker is an optional surface -
 you never need it to use the CLI.
 
 ---
@@ -371,4 +417,4 @@ Made by AMH - Artificial Mind Hive, operated by Service Pricer LLC.
 
 ## License
 
-MIT © 2026 Pain2HuStle
+MIT (c) 2026 Pain2HuStle
