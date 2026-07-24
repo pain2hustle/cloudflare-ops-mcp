@@ -410,10 +410,8 @@ Made by AMH - Artificial Mind Hive, operated by Service Pricer LLC.
 
 ## Contact / company
 
-- WALO: https://walohq.com
 - Service Pricer: https://servicepricer.app
 - GitHub: https://github.com/pain2hustle/zonemender
-- Contact: support@walohq.com
 
 ## License
 

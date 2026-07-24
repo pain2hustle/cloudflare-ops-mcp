@@ -41,4 +41,6 @@ export {
 
 export { planEmailAuth } from "./plan.js";
 
+export { purgeCache, resolveCacheZoneId } from "./cache.js";
+
 export { appendAudit, AUDIT_DEFAULT_PATH } from "./audit.js";

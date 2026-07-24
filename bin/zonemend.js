@@ -17,6 +17,7 @@ import {
   setupBimi,
   setupEmailRouting,
   planEmailAuth,
+  purgeCache,
   appendAudit,
   AUDIT_DEFAULT_PATH,
 } from "../src/index.js";
@@ -36,6 +37,9 @@ Commands:
                                            Plan/apply Email Routing forward rules + catch-all
   dmarc  <domain> --policy quarantine [--rua mailto:x] [--pct 25] [--apply]
                                            Change only the DMARC p= (and rua/pct), safely
+  purge  <domain> [--everything] [--url <abs-url> ...] [--apply]
+                                           Purge Cloudflare cache — whole zone (default) or specific --url
+                                           (repeatable). Dry-run by default; needs a token with Zone>Cache Purge.
   bimi   <domain> --logo <https-svg-url> [--vmc <https-pem-url>] [--apply] [--force]
                                            Set default._bimi TXT (refuses if DMARC=none unless --force)
   verify <domain>                          Verify the API token, then resolve the zone
@@ -169,6 +173,8 @@ async function main() {
         inbox: { type: "string" },
         forward: { type: "string", multiple: true },
         "catch-all": { type: "string" },
+        everything: { type: "boolean", default: false },
+        url: { type: "string", multiple: true },
         audit: { type: "string" },
       },
     });
@@ -184,13 +190,31 @@ async function main() {
 
   const domain = positionals[0];
   const auditPath = values.audit || AUDIT_DEFAULT_PATH;
-  const needsDomain = ["scan", "plan", "dns", "email", "dmarc", "bimi", "verify"];
+  const needsDomain = ["scan", "plan", "dns", "email", "dmarc", "bimi", "verify", "purge"];
   if (needsDomain.includes(command) && !domain) {
     errExit(`'${command}' requires a <domain>. See --help.`);
   }
 
   try {
     switch (command) {
+      case "purge": {
+        // Cloudflare cache purge. Dry-run by default; --apply actually purges.
+        // Whole zone by default; --url <abs-url> (repeatable) purges specific URLs.
+        const client = makeClient();
+        const plan = await purgeCache(client, domain, {
+          everything: values.everything === true,
+          files: values.url,
+          apply: values.apply === true,
+        });
+        if (plan.blocked) errExit(`Zone not found for ${domain} — token can't see it (Zone:Read?), or wrong account.`);
+        log(
+          `Cache purge (${domain}) — scope: ${plan.scope}${
+            plan.apply ? "  — PURGED" : "  — dry-run (add --apply to actually purge)"
+          }`
+        );
+        break;
+      }
+
       case "verify": {
         const client = makeClient();
         const status = await client.verifyToken();

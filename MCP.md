@@ -45,7 +45,5 @@ Use dry-run tools first, inspect the diff, then apply only when the owner approv
 
 ## Contact
 
-- WALO: https://walohq.com
 - Service Pricer: https://servicepricer.app
 - GitHub: https://github.com/pain2hustle/zonemender
-- Contact: support@walohq.com
