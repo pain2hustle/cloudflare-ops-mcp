@@ -22,10 +22,11 @@ import { setDmarcPolicy } from "../src/dmarc.js";
 import { setupBimi } from "../src/bimi.js";
 import { setupEmailRouting } from "../src/email.js";
 import { planEmailAuth } from "../src/plan.js";
+import { purgeCache } from "../src/cache.js";
 
 const SERVER = {
   name: "zonemender-mcp",
-  title: "Cloudflare DNS & Email-Auth Fixer (zonemender)",
+  title: "Cloudflare DNS, Email-Auth & Cache Ops (zonemender)",
   version: "0.1.0",
 };
 const PROTOCOL_FALLBACK = "2025-06-18";
@@ -139,6 +140,21 @@ const TOOLS = [
       required: ["domain"],
     },
   },
+  {
+    name: "purge_cache",
+    description:
+      "Purge Cloudflare's cache for a zone — the whole zone (default) or specific URLs. DRY-RUN by default: returns the scope and purges NOTHING unless apply=true. Needs a token with Zone > Cache Purge.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        domain: { type: "string", description: "Zone, e.g. example.com" },
+        everything: { type: "boolean", description: "Purge the whole zone cache (default when no urls given)." },
+        urls: { type: "array", items: { type: "string" }, description: "Specific absolute URLs to purge (max 30)." },
+        apply: { type: "boolean", description: "Default false = dry-run." },
+      },
+      required: ["domain"],
+    },
+  },
 ];
 
 // ── Tool implementations (each returns a plain object; serialized as text) ──
@@ -215,6 +231,13 @@ async function runTool(name, args, env) {
         { forwards: args.forwards || [], catchAll: args.catch_all },
         { apply: args.apply === true, force: args.force === true }
       );
+
+    case "purge_cache":
+      return await purgeCache(client, domain, {
+        everything: args.everything === true,
+        files: args.urls,
+        apply: args.apply === true,
+      });
 
     default:
       return { error: `unknown tool: ${name}` };
