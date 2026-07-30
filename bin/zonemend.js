@@ -18,6 +18,8 @@ import {
   setupEmailRouting,
   planEmailAuth,
   purgeCache,
+  planPagesCutover,
+  createTurnstileWidget,
   appendAudit,
   AUDIT_DEFAULT_PATH,
 } from "../src/index.js";
@@ -40,8 +42,14 @@ Commands:
   purge  <domain> [--everything] [--url <abs-url> ...] [--apply]
                                            Purge Cloudflare cache — whole zone (default) or specific --url
                                            (repeatable). Dry-run by default; needs a token with Zone>Cache Purge.
+  pages  <domain> --target <project.pages.dev> [--no-www] [--wildcard] [--apply]
+                                           Cut DNS to Cloudflare Pages: remove conflicting apex/www records
+                                           and add proxied CNAMEs. Dry-run by default.
   bimi   <domain> --logo <https-svg-url> [--vmc <https-pem-url>] [--apply] [--force]
                                            Set default._bimi TXT (refuses if DMARC=none unless --force)
+  turnstile <domain> [--name N] [--mode managed|non-interactive|invisible] [--also d2 ...] [--apply]
+                                           Auto-create a Turnstile bot-check widget. Prints the sitekey
+                                           (public) + secret (once). Needs a token with Account>Turnstile(Edit).
   verify <domain>                          Verify the API token, then resolve the zone
 
 Global options:
@@ -175,6 +183,11 @@ async function main() {
         "catch-all": { type: "string" },
         everything: { type: "boolean", default: false },
         url: { type: "string", multiple: true },
+        target: { type: "string" },
+        "no-www": { type: "boolean", default: false },
+        wildcard: { type: "boolean", default: false },
+        mode: { type: "string" },
+        also: { type: "string", multiple: true },
         audit: { type: "string" },
       },
     });
@@ -190,7 +203,7 @@ async function main() {
 
   const domain = positionals[0];
   const auditPath = values.audit || AUDIT_DEFAULT_PATH;
-  const needsDomain = ["scan", "plan", "dns", "email", "dmarc", "bimi", "verify", "purge"];
+  const needsDomain = ["scan", "plan", "dns", "email", "dmarc", "bimi", "verify", "purge", "pages", "turnstile"];
   if (needsDomain.includes(command) && !domain) {
     errExit(`'${command}' requires a <domain>. See --help.`);
   }
@@ -212,6 +225,75 @@ async function main() {
             plan.apply ? "  — PURGED" : "  — dry-run (add --apply to actually purge)"
           }`
         );
+        break;
+      }
+
+      case "pages": {
+        if (!values.target) errExit("pages requires --target <project.pages.dev>.");
+        const client = makeClient();
+        const plan = await planPagesCutover(client, domain, {
+          target: values.target,
+          includeWww: values["no-www"] !== true,
+          includeWildcard: values.wildcard === true,
+          apply: values.apply === true,
+        });
+        log(`Pages DNS cutover for ${plan.domain}:`);
+        log(`  target: ${plan.target}`);
+        log(`  zone_id: ${plan.zone_id}`);
+        log(`  hostnames: ${plan.include_www ? `${plan.domain}, www.${plan.domain}` : plan.domain}`);
+        log(`  mode: ${plan.apply ? "APPLIED" : "dry-run"}`);
+
+        log("\nConflicting records to delete:");
+        if (plan.delete.length === 0) {
+          log("  (none)");
+        } else {
+          for (const r of plan.delete) {
+            log(`  - ${r.type} ${r.name} -> ${r.content} (id=${r.id})`);
+          }
+        }
+
+        log("\nCNAME records to create/update:");
+        for (const p of plan.upserts) {
+          log(fmtDiff(p).split("\n").map((line) => `  ${line}`).join("\n"));
+        }
+
+        for (const w of plan.warnings) log(`  warn: ${w}`);
+
+        if (plan.apply) {
+          for (const r of plan.delete) {
+            appendAudit(auditPath, {
+              ts: new Date().toISOString(),
+              action: "pages.delete_conflict",
+              domain,
+              record: r,
+              before: r,
+              after: null,
+            });
+          }
+          for (const p of plan.upserts) auditFromPlan(auditPath, "pages.cname", domain, p);
+        } else if (plan.has_changes) {
+          log("\nDry-run only. Re-run with --apply to write this Pages cutover.");
+        }
+        break;
+      }
+
+      case "turnstile": {
+        // Auto-create a Turnstile widget. Dry-run by default; --apply creates it.
+        const client = makeClient();
+        const result = await createTurnstileWidget(client, domain, {
+          name: values.name,
+          mode: values.mode || "managed",
+          extraDomains: values.also || [],
+          apply: values.apply === true,
+        });
+        if (!result.applied) {
+          log(`Turnstile PLAN (${domain}) — name "${result.widget.name}", mode ${result.widget.mode}, domains: ${result.widget.domains.join(", ")}`);
+          log(`(dry-run — add --apply to actually create it)`);
+        } else {
+          log(`Turnstile widget CREATED for ${domain}:`);
+          log(`  SITEKEY (public — put in your HTML widget):  ${result.sitekey}`);
+          log(`  SECRET  (store NOW, shown once — server-side verify only):  ${result.secret}`);
+        }
         break;
       }
 

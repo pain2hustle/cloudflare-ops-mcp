@@ -37,6 +37,36 @@ This is not meant to replace every Cloudflare feature. It is the narrow, safe la
 
 The examples below are intentionally direct. They are not toy examples. They show the exact dry-run -> review -> apply pattern users should follow when fixing real domains.
 
+### Cloudflare Pages DNS cutover
+
+Use this when an old registrar, parking page, Vercel app, HugeDomains page, or stale A/AAAA records are blocking a Cloudflare Pages custom domain.
+
+Dry-run first:
+
+```sh
+zonemend pages example.com --target project.pages.dev
+```
+
+Apply only after reviewing the delete/create plan:
+
+```sh
+zonemend pages example.com --target project.pages.dev --apply
+```
+
+What it changes:
+
+- Deletes conflicting apex A/AAAA/CNAME records.
+- Deletes conflicting www A/AAAA/CNAME records and www NS delegations.
+- Adds proxied CNAME records for apex and www pointing at the Pages target.
+- Leaves TXT, MX, SPF, DKIM, DMARC, BIMI, and other delegated subdomains alone.
+- Leaves wildcard records alone unless you explicitly add `--wildcard`.
+
+Options:
+
+- `--no-www` only cuts over the apex domain.
+- `--wildcard` also removes conflicting `*.example.com` A/AAAA/CNAME records.
+
+
 ## Why build this with Wrangler?
 
 Wrangler is Cloudflare's official developer CLI. ZoneMender can run without Wrangler as a local CLI/library, but Wrangler is the right path when you want a remote MCP server because it deploys the Worker, stores secrets, tails logs, and manages Cloudflare bindings from the same toolchain Cloudflare documents.

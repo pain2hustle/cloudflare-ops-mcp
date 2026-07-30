@@ -43,4 +43,8 @@ export { planEmailAuth } from "./plan.js";
 
 export { purgeCache, resolveCacheZoneId } from "./cache.js";
 
+export { planPagesCutover } from "./pages.js";
+
+export { createTurnstileWidget } from "./turnstile.js";
+
 export { appendAudit, AUDIT_DEFAULT_PATH } from "./audit.js";
