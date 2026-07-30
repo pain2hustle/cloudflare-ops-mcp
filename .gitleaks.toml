@@ -1,0 +1,13 @@
+title = "zonemender gitleaks"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Only documented placeholder values are allowed. Real env/dev-var files must stay ignored and should still fail if committed."
+regexes = [
+  '''your[-_]scoped[-_]token''',
+  '''cf_scoped_token_from_cloudflare_dashboard''',
+  '''zm_generated_by_npm_run_worker_generate_key''',
+  '''[a-z0-9._%+-]+@example\.com''',
+]
