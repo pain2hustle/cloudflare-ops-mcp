@@ -60,6 +60,7 @@
     "src",
     "bin",
     "worker/index.js",
+    "worker/oauth.js",
     "worker/wrangler.jsonc",
     "README.md",
     "MCP.md",
@@ -69,6 +70,7 @@
     "scripts/generate-mcp-key.mjs",
     "SETUP.md",
     "PHASES.md",
+    "OAUTH.md",
     "ROADMAP.md",
     "SECURITY.md"
   ],

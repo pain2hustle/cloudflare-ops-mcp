@@ -4,7 +4,15 @@
   "main": "index.js",
   "compatibility_date": "2025-07-01",
   "compatibility_flags": ["nodejs_compat"],
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  "kv_namespaces": [
+    { "binding": "ZONEMENDER_OAUTH", "id": "1854b6d5bc8c4860bc914412443a0172" }
+  ]
+  // OAuth secrets for hosted connectors:
+  //   npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_ID
+  //   npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_SECRET
+  //   npx wrangler secret put CLOUDFLARE_OAUTH_REDIRECT_URI
+  // Optional var/secret: CLOUDFLARE_OAUTH_SCOPES
   // Two secrets (never vars, never in git):
   //   cd worker
   //   npx wrangler secret put CLOUDFLARE_API_TOKEN   # scoped CF token the tools use

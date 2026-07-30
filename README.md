@@ -157,7 +157,7 @@ The scanner reports SPF, DKIM discovery, DMARC policy, BIMI readiness, MX record
 
 ## Quick setup
 
-For the fastest path, start with [SETUP.md](SETUP.md). It explains the CLI path, the Wrangler-hosted MCP path, and how users provide their own Cloudflare credentials safely. See [PHASES.md](PHASES.md) for the rollout model and [ROADMAP.md](ROADMAP.md) for the next upgrades.
+For the fastest path, start with [SETUP.md](SETUP.md). It explains the CLI path, the Wrangler-hosted MCP path, and how users provide their own Cloudflare credentials safely. See [PHASES.md](PHASES.md) for the rollout model, [OAUTH.md](OAUTH.md) for hosted Cloudflare OAuth, and [ROADMAP.md](ROADMAP.md) for the next upgrades.
 
 ## Install
 

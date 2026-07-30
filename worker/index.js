@@ -24,6 +24,7 @@ import { setupEmailRouting } from "../src/email.js";
 import { planEmailAuth } from "../src/plan.js";
 import { purgeCache } from "../src/cache.js";
 import { planPagesCutover } from "../src/pages.js";
+import { getOAuthAccessToken, handleOAuthCallback, handleOAuthStart, handleOAuthStatus } from "./oauth.js";
 
 const SERVER = {
   name: "zonemender-mcp",
@@ -176,11 +177,12 @@ const TOOLS = [
 
 // ── Tool implementations (each returns a plain object; serialized as text) ──
 async function runTool(name, args, env) {
-  const token = env.CLOUDFLARE_API_TOKEN;
+  const tenant = String(args.tenant || "default").trim() || "default";
+  const token = (await getOAuthAccessToken(env, tenant)) || env.CLOUDFLARE_API_TOKEN;
   if (!token) {
     return {
       error:
-        "No Cloudflare token configured on this server. The operator must run: wrangler secret put CLOUDFLARE_API_TOKEN",
+        "No Cloudflare token configured. Connect Cloudflare with /oauth/cloudflare/start or set CLOUDFLARE_API_TOKEN as a Worker secret.",
     };
   }
   const client = new CloudflareClient({ token });
@@ -338,6 +340,9 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
 
     const url = new URL(request.url);
+    if (url.pathname === "/oauth/cloudflare/start") return handleOAuthStart(request, env);
+    if (url.pathname === "/oauth/cloudflare/callback") return handleOAuthCallback(request, env);
+    if (url.pathname === "/oauth/cloudflare/status") return handleOAuthStatus(request, env);
     // Health/info on GET.
     if (request.method === "GET") {
       return new Response(
