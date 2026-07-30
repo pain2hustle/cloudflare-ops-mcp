@@ -18,7 +18,7 @@ ZoneMender includes an unofficial Cloudflare DNS MCP server for AI agents. It is
 - Plan email-authentication fixes without writing anything.
 - Apply DNS, DMARC, BIMI, and Email Routing changes only after explicit approval.
 - Keep the Cloudflare API token as a Worker secret, not a tool parameter.
-- Require an MCP access key so the public Worker URL is not open to the internet.
+- Require an MCP access key so the public Worker URL is not open to the internet; POST requests fail closed if the key is missing.
 
 ## Official status
 

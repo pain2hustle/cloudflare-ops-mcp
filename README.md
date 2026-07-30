@@ -157,7 +157,7 @@ The scanner reports SPF, DKIM discovery, DMARC policy, BIMI readiness, MX record
 
 ## Quick setup
 
-For the fastest path, start with [SETUP.md](SETUP.md). It explains the CLI path, the Wrangler-hosted MCP path, and how users provide their own Cloudflare credentials safely. See [ROADMAP.md](ROADMAP.md) for the next upgrades.
+For the fastest path, start with [SETUP.md](SETUP.md). It explains the CLI path, the Wrangler-hosted MCP path, and how users provide their own Cloudflare credentials safely. See [PHASES.md](PHASES.md) for the rollout model and [ROADMAP.md](ROADMAP.md) for the next upgrades.
 
 ## Install
 
@@ -418,7 +418,7 @@ Three deliberate hardening choices:
 - **The endpoint itself is locked.** Because these tools can mutate DNS, a public
   Worker URL must not be callable by anyone who finds it. Set `MCP_ACCESS_KEY` and
   the server rejects any request without `Authorization: Bearer <MCP_ACCESS_KEY>`
-  (or an `X-MCP-Key` header). Deploying without it leaves the endpoint open - don't.
+  (or an `X-MCP-Key` header). Deploying without it makes POST requests fail closed with `503`, so DNS tools are never accidentally exposed.
 - **Every mutating tool is dry-run by default**; the caller must pass
   `apply: true` after seeing the diff. BIMI keeps its DMARC precondition.
 

@@ -23,6 +23,7 @@ import { setupBimi } from "../src/bimi.js";
 import { setupEmailRouting } from "../src/email.js";
 import { planEmailAuth } from "../src/plan.js";
 import { purgeCache } from "../src/cache.js";
+import { planPagesCutover } from "../src/pages.js";
 
 const SERVER = {
   name: "zonemender-mcp",
@@ -141,6 +142,22 @@ const TOOLS = [
     },
   },
   {
+    name: "pages_cutover",
+    description:
+      "Plan or apply a Cloudflare Pages DNS cutover. Deletes only conflicting apex/www A/AAAA/CNAME records and www NS delegations, then creates proxied CNAMEs to the Pages target. DRY-RUN by default; writes only when apply=true.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        domain: { type: "string", description: "Root zone, e.g. example.com" },
+        target: { type: "string", description: "Pages hostname, normally project.pages.dev" },
+        include_www: { type: "boolean", description: "Also cut over www. Default true." },
+        include_wildcard: { type: "boolean", description: "Also remove conflicting wildcard records. Default false." },
+        apply: { type: "boolean", description: "Default false = dry-run." },
+      },
+      required: ["domain", "target"],
+    },
+  },
+  {
     name: "purge_cache",
     description:
       "Purge Cloudflare's cache for a zone — the whole zone (default) or specific URLs. DRY-RUN by default: returns the scope and purges NOTHING unless apply=true. Needs a token with Zone > Cache Purge.",
@@ -232,6 +249,14 @@ async function runTool(name, args, env) {
         { apply: args.apply === true, force: args.force === true }
       );
 
+    case "pages_cutover":
+      return await planPagesCutover(client, domain, {
+        target: args.target,
+        includeWww: args.include_www !== false,
+        includeWildcard: args.include_wildcard === true,
+        apply: args.apply === true,
+      });
+
     case "purge_cache":
       return await purgeCache(client, domain, {
         everything: args.everything === true,
@@ -305,7 +330,7 @@ async function handleRpc(msg, env) {
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Accept, Mcp-Session-Id, Mcp-Protocol-Version",
+  "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization, X-MCP-Key, Mcp-Session-Id, Mcp-Protocol-Version",
 };
 
 export default {
@@ -331,20 +356,24 @@ export default {
       return new Response("Method Not Allowed", { status: 405, headers: CORS });
     }
 
-    // Endpoint lock: this server can MUTATE DNS, so a public URL must not be
-    // callable by anyone who finds it. If MCP_ACCESS_KEY is set (recommended
-    // for any deploy), require it as a Bearer token or X-MCP-Key header.
+    // Endpoint lock: this server can MUTATE DNS, so a public URL must fail
+    // closed. MCP_ACCESS_KEY is required for every POST; do not deploy this
+    // Worker as a callable MCP server until the secret exists.
     const gate = env.MCP_ACCESS_KEY;
-    if (gate) {
-      const auth = request.headers.get("authorization") || "";
-      const provided = (/^Bearer\s+/i.test(auth) ? auth.replace(/^Bearer\s+/i, "") : "").trim()
-        || (request.headers.get("x-mcp-key") || "").trim();
-      if (provided !== gate) {
-        return new Response(JSON.stringify(rpcError(null, -32001, "unauthorized")), {
-          status: 401,
-          headers: { "content-type": "application/json", "www-authenticate": "Bearer", ...CORS },
-        });
-      }
+    if (!gate) {
+      return new Response(JSON.stringify(rpcError(null, -32002, "server missing MCP_ACCESS_KEY")), {
+        status: 503,
+        headers: { "content-type": "application/json", ...CORS },
+      });
+    }
+    const auth = request.headers.get("authorization") || "";
+    const provided = (/^Bearer\s+/i.test(auth) ? auth.replace(/^Bearer\s+/i, "") : "").trim()
+      || (request.headers.get("x-mcp-key") || "").trim();
+    if (provided !== gate) {
+      return new Response(JSON.stringify(rpcError(null, -32001, "unauthorized")), {
+        status: 401,
+        headers: { "content-type": "application/json", "www-authenticate": "Bearer", ...CORS },
+      });
     }
 
     let body;

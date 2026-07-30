@@ -21,7 +21,7 @@ const messyDns = [
 test("pages cutover dry-run deletes only apex/www conflicts and preserves TXT/wildcard", async () => {
   const mock = makeMock({ domain: "example.com", dns: messyDns });
   const plan = await planPagesCutover(client(mock), "example.com", {
-    target: "bookitnow.pages.dev",
+    target: "demo-project.pages.dev",
     zoneId: "zone123",
   });
 
@@ -36,7 +36,7 @@ test("pages cutover dry-run deletes only apex/www conflicts and preserves TXT/wi
 test("pages cutover apply deletes conflicts then creates proxied CNAMEs", async () => {
   const mock = makeMock({ domain: "example.com", dns: messyDns });
   const plan = await planPagesCutover(client(mock), "example.com", {
-    target: "bookitnow.pages.dev",
+    target: "demo-project.pages.dev",
     zoneId: "zone123",
     apply: true,
   });
@@ -50,10 +50,10 @@ test("pages cutover apply deletes conflicts then creates proxied CNAMEs", async 
   const cnames = mock.state.dns.filter((r) => r.type === "CNAME").sort((a, b) => a.name.localeCompare(b.name));
   assert.equal(cnames.length, 2);
   assert.equal(cnames[0].name, "example.com");
-  assert.equal(cnames[0].content, "bookitnow.pages.dev");
+  assert.equal(cnames[0].content, "demo-project.pages.dev");
   assert.equal(cnames[0].proxied, true);
   assert.equal(cnames[1].name, "www.example.com");
-  assert.equal(cnames[1].content, "bookitnow.pages.dev");
+  assert.equal(cnames[1].content, "demo-project.pages.dev");
   assert.ok(mock.state.dns.find((r) => r.id === "spf"), "TXT/SPF must survive");
   assert.ok(mock.state.dns.find((r) => r.id === "wild"), "wildcard must survive by default");
 });
@@ -61,7 +61,7 @@ test("pages cutover apply deletes conflicts then creates proxied CNAMEs", async 
 test("pages cutover can skip www", async () => {
   const mock = makeMock({ domain: "example.com", dns: messyDns });
   const plan = await planPagesCutover(client(mock), "example.com", {
-    target: "bookitnow.pages.dev",
+    target: "demo-project.pages.dev",
     zoneId: "zone123",
     includeWww: false,
   });
@@ -73,7 +73,7 @@ test("pages cutover can skip www", async () => {
 test("pages cutover can explicitly include wildcard conflicts", async () => {
   const mock = makeMock({ domain: "example.com", dns: messyDns });
   const plan = await planPagesCutover(client(mock), "example.com", {
-    target: "bookitnow.pages.dev",
+    target: "demo-project.pages.dev",
     zoneId: "zone123",
     includeWildcard: true,
   });
@@ -85,12 +85,12 @@ test("pages cutover no-ops when correct CNAMEs already exist", async () => {
   const mock = makeMock({
     domain: "example.com",
     dns: [
-      { id: "c1", type: "CNAME", name: "example.com", content: "bookitnow.pages.dev", proxied: true, ttl: 1 },
-      { id: "c2", type: "CNAME", name: "www.example.com", content: "bookitnow.pages.dev", proxied: true, ttl: 1 },
+      { id: "c1", type: "CNAME", name: "example.com", content: "demo-project.pages.dev", proxied: true, ttl: 1 },
+      { id: "c2", type: "CNAME", name: "www.example.com", content: "demo-project.pages.dev", proxied: true, ttl: 1 },
     ],
   });
   const plan = await planPagesCutover(client(mock), "example.com", {
-    target: "bookitnow.pages.dev",
+    target: "demo-project.pages.dev",
     zoneId: "zone123",
     apply: true,
   });

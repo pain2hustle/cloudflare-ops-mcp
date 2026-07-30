@@ -1,6 +1,6 @@
 # ZoneMender Roadmap
 
-ZoneMender's direction is simple: make Cloudflare operations safe enough for AI agents and easy enough for non-traditional builders.
+ZoneMender's direction is simple: make Cloudflare operations safe enough for AI agents and easy enough for non-traditional builders. The five-phase rollout is tracked in [PHASES.md](PHASES.md).
 
 ## Next upgrades
 

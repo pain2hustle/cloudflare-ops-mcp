@@ -7,7 +7,7 @@ ZoneMender is meant to make Cloudflare DNS work safe and reviewable:
 3. Approve only what you understand.
 4. Apply the DNS change only after review.
 
-ZoneMender is a standalone open-source tool. It does not include anyone's Cloudflare API keys, account credentials, hosted proxy token, or private connector. Each user brings their own Cloudflare authorization.
+ZoneMender is a standalone open-source tool. It does not include anyone's Cloudflare API keys, account credentials, hosted proxy token, or private connector. Each user brings their own Cloudflare authorization. See [PHASES.md](PHASES.md) for the public rollout path from local CLI to hosted OAuth connector.
 
 ## Authorization paths
 
