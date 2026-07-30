@@ -8,7 +8,7 @@ ZoneMender's direction is simple: make Cloudflare operations safe enough for AI 
 - Better plain-English plans: show "what changes", "why it matters", and "what can go wrong".
 - HTML report output for clients and small-business owners.
 - GitHub Action to validate `server.json`, run tests, and publish releases.
-- Optional hosted WALO connector so users can connect Cloudflare through OAuth instead of pasting tokens.
+- Optional host-app connector pattern so products can add Cloudflare OAuth without exposing user tokens to agents.
 - More DNS recipes: Google Search Console verification, Microsoft 365 mail, Google Workspace mail, Resend, Stripe, and common SaaS verification records.
 - Safer multi-tenant mode with encrypted token storage, tenant-scoped audit logs, and approval receipts.
 
@@ -18,7 +18,7 @@ Goal: everything Vercel does automatically for a Next.js app, done through ZoneM
 
 - ✅ **Cache purge** — whole-zone or per-URL (`zonemend purge`). Done: CLI + lib + MCP `purge_cache`.
 - **Cache Rules (edge-TTL override)** — the big one: set a short edge TTL for HTML pages so deploys go live on their own (Vercel's "auto-fresh" behavior) while hashed assets stay long-cached. Ends the "purge after every deploy" chore. ⚠️ Uses CF's Rulesets engine (read-modify-write the `http_request_cache_settings` entrypoint) — MUST preserve existing rules and be tested on a throwaway zone before touching production cache config.
-- **Custom domain attach/detach** — bind a domain to a Worker in one command, cleanly overriding an existing DNS record (the paycovey.com-cutover pain point). Needs a token with Workers + DNS edit.
+- **Custom domain attach/detach** - bind a domain to a Worker or Pages project in one command, cleanly replacing conflicting DNS after an explicit dry-run diff. Needs a token with Workers/Pages + DNS edit.
 - **Deploy health-check** — after a ship: verify key paths return 200, DNS resolves to the worker, SSL is active. Fail loud.
 - **Worker ops** — list deployments, show current version, one-command rollback.
 - **Uptime/monitoring recipe** — scheduled health checks that alert on a down path.

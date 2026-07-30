@@ -90,7 +90,7 @@ The scanner reports SPF, DKIM discovery, DMARC policy, BIMI readiness, MX record
 - Zero-dependency core library for host apps and CLI use.
 - Scoped Cloudflare token guidance instead of Global API Key usage.
 - Audit logging for applied changes, with token redaction.
-- WALO-ready phone workflow documented for non-traditional builders.
+- Operator-ready setup docs for CLI, library, and self-hosted MCP use.
 
 </td>
 </tr>
@@ -127,7 +127,7 @@ The scanner reports SPF, DKIM discovery, DMARC policy, BIMI readiness, MX record
 
 ## Quick setup
 
-For the fastest path, start with [SETUP.md](SETUP.md). It explains the CLI path, the Wrangler-hosted MCP path, and the phone-first WALO workflow. See [ROADMAP.md](ROADMAP.md) for the next upgrades.
+For the fastest path, start with [SETUP.md](SETUP.md). It explains the CLI path, the Wrangler-hosted MCP path, and how users provide their own Cloudflare credentials safely. See [ROADMAP.md](ROADMAP.md) for the next upgrades.
 
 ## Install
 
@@ -175,6 +175,16 @@ cp .env.example .env
 ```
 
 `zonemender` reads `CLOUDFLARE_API_TOKEN` from the environment only.
+
+### Public-use credential model
+
+ZoneMender does **not** ship with an API key, shared account, hosted proxy token, or any hidden credentials. Every operator must bring one of these:
+
+- a scoped Cloudflare API token in their own environment for local CLI/library use;
+- a scoped Cloudflare API token stored as their own Worker secret for self-hosted MCP use;
+- an OAuth/token-vault integration built by their own host app, with approval gates before writes.
+
+Do not ask users to send tokens through chat, issues, logs, or screenshots. If a token is exposed, rotate it in Cloudflare and create a new scoped token.
 
 ---
 

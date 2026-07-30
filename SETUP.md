@@ -1,86 +1,35 @@
-# ZoneMender Setup for Vibe Coders
+# ZoneMender Setup
 
-ZoneMender is meant to make Cloudflare DNS work feel like this:
+ZoneMender is meant to make Cloudflare DNS work safe and reviewable:
 
 1. Scan first.
 2. See the exact planned change.
 3. Approve only what you understand.
-4. Let the tool write the DNS safely.
+4. Apply the DNS change only after review.
 
-You can use raw Wrangler, but ZoneMender gives you safer lanes on top of Wrangler: DMARC, SPF, BIMI, Email Routing, and DNS fixes with dry-run defaults.
+ZoneMender is a standalone open-source tool. It does not include anyone's Cloudflare API keys, account credentials, hosted proxy token, or private connector. Each user brings their own Cloudflare authorization.
 
-## What the user must provide
+## Authorization paths
 
 A user needs one of these authorization paths:
 
-1. **Best path: OAuth through the host app.** The user clicks Connect Cloudflare, approves Cloudflare permissions, and the host app stores encrypted tokens. This is best for WALO-style customer accounts.
-2. **Self-hosted path: scoped Cloudflare API token.** The user creates a least-privilege token in Cloudflare and puts it into Worker secrets. This is best for developers and self-hosted MCP users.
+1. **Local CLI path.** Create a least-privilege Cloudflare API token and export it as `CLOUDFLARE_API_TOKEN` in your own terminal.
+2. **Self-hosted MCP path.** Deploy the included Worker to your own Cloudflare account and store your own `CLOUDFLARE_API_TOKEN` and `MCP_ACCESS_KEY` as Worker secrets.
+3. **Host-app path.** If a separate product embeds ZoneMender, that product must implement its own OAuth/token vault and approval flow. ZoneMender itself does not provide shared hosted credentials.
 
-ZoneMender can generate the **MCP access key** that protects the Worker endpoint. It cannot safely invent a user's Cloudflare API token without Cloudflare approval. That ownership proof has to come from OAuth or Cloudflare's dashboard.
+ZoneMender can generate the **MCP access key** that protects the Worker endpoint. It cannot create a user's Cloudflare API token without Cloudflare approval. That ownership proof has to come from Cloudflare OAuth or the Cloudflare dashboard.
 
-Generate the MCP endpoint key:
+## Cloudflare token permissions
 
-```sh
-npm run worker:generate-key
-```
+Use a scoped Cloudflare API token. Never use your Global API Key.
 
-Then store it as a Worker secret:
+Minimum permissions for the common DNS/email-auth tools:
 
-```sh
-cd worker
-npx wrangler secret put MCP_ACCESS_KEY
-```
+- Zone / Zone / Read
+- Zone / DNS / Edit
+- Zone / Email Routing Rules / Edit
 
-
-## Phone-only Git and WALO workflow
-
-This is the no-PC lane for a builder using ChatGPT, Claude, Codex, or another agent from a phone.
-
-<table>
-<tr>
-<td>
-
-**1. Inspect from the phone**
-
-The user asks a phone AI assistant to inspect a GitHub repo, write a fix plan, or produce a small code/document change. The assistant should return the exact repo, file path, change summary, and risk notes.
-
-</td>
-</tr>
-<tr>
-<td>
-
-**2. Send to WALO**
-
-The user sends the approved request to WALO in chat. WALO uses the user's connected GitHub account to stage a branch or commit, and the connected Cloudflare account to verify or deploy when that action is authorized.
-
-</td>
-</tr>
-<tr>
-<td>
-
-**3. ZoneMender handles Cloudflare safely**
-
-For DNS, DMARC, BIMI, SPF, MX, or Email Routing work, WALO calls ZoneMender. ZoneMender scans first, returns a diff, and writes only after explicit approval.
-
-</td>
-</tr>
-<tr>
-<td>
-
-**4. Proof comes back to chat**
-
-After apply/deploy, WALO should send the commit, changed files, live URL, 200/404 checks, and any warnings back to the phone chat so the user can keep moving without opening a PC.
-
-</td>
-</tr>
-</table>
-
-What still has to be real:
-
-- GitHub must be connected by OAuth or a scoped token before repo writes.
-- Cloudflare must be connected by OAuth or a scoped API token before DNS or deploy writes.
-- Sensitive actions need approval gates: DNS, deploys, public posts, payments, and production code writes.
-- If a connector is not connected, WALO should say what is missing instead of pretending the action ran.
+Best practice: limit the token to the exact zones the operator should manage.
 
 ## Fast local CLI
 
@@ -98,7 +47,7 @@ Dry-run is the default. The write only happens when you add `--apply`.
 
 ## Hosted MCP with Wrangler
 
-Use this when you want Claude, Codex, Cursor, WALO, or another agent to call ZoneMender as a remote MCP server.
+Use this when you want an MCP-compatible agent or editor to call ZoneMender as a remote tool while keeping the Cloudflare API token in your own Worker secrets.
 
 ```sh
 git clone https://github.com/pain2hustle/zonemender.git
@@ -110,23 +59,34 @@ npm run worker:set-key
 npm run worker:deploy
 ```
 
-Then connect your MCP client to the deployed Worker URL and send the header:
+Then connect your MCP client to the deployed Worker URL and send the access key in a header:
 
-```
+```http
 Authorization: Bearer <MCP_ACCESS_KEY>
 ```
 
-## Cloudflare token permissions
+## Worker secrets
 
-Use a scoped Cloudflare API token. Never use your Global API Key.
+Store real secrets only with Wrangler, never in git:
 
-Minimum permissions:
+```sh
+cd worker
+npx wrangler secret put CLOUDFLARE_API_TOKEN
+npx wrangler secret put MCP_ACCESS_KEY
+```
 
-- Zone / Zone / Read
-- Zone / DNS / Edit
-- Zone / Email Routing Rules / Edit
+The example files contain placeholders only. `.env`, `.env.local`, `.dev.vars`, `worker/.dev.vars`, logs, and Wrangler output are ignored by git.
 
-Best practice: limit the token to the exact zones the agent should manage.
+## Approval workflow
+
+A safe operator flow is:
+
+1. Run `scan` or `plan` first.
+2. Read the diff.
+3. Apply only the exact command you approved with `--apply`.
+4. Keep the audit log for the applied change.
+
+For hosted MCP use, keep the same rule: the agent should call read-only tools first, show the diff, then call mutating tools only when the owner approves.
 
 ## Why this is easier than raw Wrangler
 
@@ -139,15 +99,3 @@ Wrangler is the official Cloudflare developer CLI. It is powerful, but it does n
 - "delete" -> blocked unless explicitly confirmed.
 
 Wrangler still handles deployment, secrets, and logs. ZoneMender handles safe Cloudflare DNS workflows.
-
-## For WALO-style phone workflows
-
-A small business owner should not need to understand every record by name. A good agent flow is:
-
-1. Owner texts: "check email walohq.com".
-2. WALO calls ZoneMender MCP scan tools.
-3. WALO replies with plain-English status and exact DNS diff.
-4. Owner replies "YES apply dmarc".
-5. ZoneMender applies one scoped fix and writes an audit log.
-
-That is the lane: phone-first, approval-first, no dashboard maze.
