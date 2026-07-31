@@ -1,16 +1,16 @@
-# ZoneMender - Cloudflare DNS and Email Auth MCP Server
+# Cloudflare Ops MCP - DNS, Email, Pages, Cache, Turnstile
 
-ZoneMender is an unofficial Cloudflare DNS MCP server, CLI, and JavaScript library for AI agents and developers. It is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC.
+Cloudflare Ops MCP is an unofficial Cloudflare operations MCP server, CLI, and JavaScript library for AI agents and developers. It is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC.
 
-Primary repository: https://github.com/pain2hustle/zonemender
+Primary repository: https://github.com/pain2hustle/cloudflare-ops-mcp
 
 ## Summary
 
-ZoneMender scans Cloudflare zones and plans or applies approval-gated fixes for DNS records, TXT verification records, SPF, DMARC, BIMI, DKIM discovery, MX records, and Cloudflare Email Routing. It is designed for safe AI-agent use: dry-run first, show diffs, never delete as a side effect, keep Cloudflare tokens out of tool parameters, and deploy the MCP server as a Cloudflare Worker with Wrangler.
+Cloudflare Ops MCP scans Cloudflare zones and plans or applies approval-gated fixes for DNS records, TXT verification records, SPF, DMARC, BIMI, DKIM discovery, MX records, Email Routing, Pages cutovers, cache purge, and Turnstile widgets. It is designed for safe AI-agent use: dry-run first, show diffs, never delete as a side effect, keep Cloudflare tokens out of tool parameters, and deploy the MCP server as a Cloudflare Worker with Wrangler.
 
 ## Important distinction
 
-ZoneMender is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC. It is independent and unofficial. It is not affiliated with, endorsed by, sponsored by, or made by Cloudflare, Inc. Cloudflare and Wrangler are named only to describe compatibility.
+Cloudflare Ops MCP is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC. It is independent and unofficial. It is not affiliated with, endorsed by, sponsored by, or made by Cloudflare, Inc. Cloudflare and Wrangler are named only to describe compatibility.
 
 ## Useful files
 
@@ -20,9 +20,9 @@ ZoneMender is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC
 - ROADMAP.md: planned improvements and safety boundaries.
 - worker/index.js: Cloudflare Worker MCP endpoint.
 - src/: zero-dependency Cloudflare zone fixer library.
-- bin/zonemend.js: CLI entry point.
+- bin/cfops.js: CLI entry point.
 
 ## Contact
 
 Service Pricer: https://servicepricer.app
-GitHub: https://github.com/pain2hustle/zonemender
+GitHub: https://github.com/pain2hustle/cloudflare-ops-mcp

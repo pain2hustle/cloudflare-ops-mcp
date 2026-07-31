@@ -1,82 +1,95 @@
 {
-  "name": "zonemender",
-  "version": "0.1.0",
-  "description": "Unofficial Cloudflare DNS and email-auth MCP server for AI agents: DMARC, SPF, BIMI, Email Routing, Wrangler, and safe DNS fixes.",
-  "type": "module",
-  "main": "src/index.js",
-  "exports": {
-    ".": "./src/index.js"
-  },
-  "bin": {
-    "zonemend": "./bin/zonemend.js"
-  },
-  "scripts": {
-    "test": "node --test",
-    "worker:dev": "cd worker && npx wrangler dev",
-    "worker:deploy": "cd worker && npx wrangler deploy",
-    "worker:tail": "cd worker && npx wrangler tail",
-    "worker:set-token": "cd worker && npx wrangler secret put CLOUDFLARE_API_TOKEN",
-    "worker:set-key": "cd worker && npx wrangler secret put MCP_ACCESS_KEY",
-    "registry:validate": "mcp-publisher validate",
-    "worker:generate-key": "node scripts/generate-mcp-key.mjs"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "keywords": [
-    "cloudflare-email-auth",
-    "cloudflare-mcp",
-    "cloudflare-dns-mcp",
-    "cloudflare",
-    "wrangler",
-    "mcp-server",
-    "model-context-protocol",
-    "ai-agent",
-    "dns",
-    "dns-management",
-    "dmarc",
-    "bimi",
-    "spf",
-    "dkim",
-    "email-routing",
-    "email-authentication",
-    "cloudflare-api",
-    "workers",
-    "cloudflare-workers",
-    "zone-fixer",
-    "approval-gated"
-  ],
-  "author": "AMH - Artificial Mind Hive (Service Pricer LLC)",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/pain2hustle/zonemender.git"
-  },
-  "homepage": "https://github.com/pain2hustle/zonemender",
-  "bugs": {
-    "url": "https://github.com/pain2hustle/zonemender/issues"
-  },
-  "files": [
-    "src",
-    "bin",
-    "worker/index.js",
-    "worker/oauth.js",
-    "worker/wrangler.jsonc",
-    "README.md",
-    "MCP.md",
-    "llms.txt",
-    "server.json",
-    "LICENSE",
-    "scripts/generate-mcp-key.mjs",
-    "SETUP.md",
-    "PHASES.md",
-    "OAUTH.md",
-    "ROADMAP.md",
-    "SECURITY.md"
-  ],
-  "mcpName": "io.github.pain2hustle/zonemender",
-  "funding": {
-    "type": "custom",
-    "url": "https://servicepricer.app"
-  }
+    "name":  "cloudflare-ops-mcp",
+    "version":  "0.1.0",
+    "description":  "Unofficial Cloudflare Ops MCP server and CLI for AI agents: DNS, Email Routing, DMARC, SPF, BIMI, Pages cutovers, cache purge, Turnstile, Wrangler, and approval-gated fixes.",
+    "type":  "module",
+    "main":  "src/index.js",
+    "exports":  {
+                    ".":  "./src/index.js"
+                },
+    "bin":  {
+                "cfops":  "./bin/cfops.js"
+            },
+    "scripts":  {
+                    "test":  "node --test",
+                    "worker:dev":  "cd worker \u0026\u0026 npx wrangler dev",
+                    "worker:deploy":  "cd worker \u0026\u0026 npx wrangler deploy",
+                    "worker:tail":  "cd worker \u0026\u0026 npx wrangler tail",
+                    "worker:set-token":  "cd worker \u0026\u0026 npx wrangler secret put CLOUDFLARE_API_TOKEN",
+                    "worker:set-key":  "cd worker \u0026\u0026 npx wrangler secret put MCP_ACCESS_KEY",
+                    "registry:validate":  "mcp-publisher validate",
+                    "worker:generate-key":  "node scripts/generate-mcp-key.mjs",
+                    "oauth:setup":  "node scripts/oauth-setup.mjs",
+                    "worker:set-oauth":  "cd worker \u0026\u0026 npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_ID \u0026\u0026 npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_SECRET \u0026\u0026 npx wrangler secret put CLOUDFLARE_OAUTH_REDIRECT_URI",
+                    "oauth:create":  "node scripts/cloudflare-oauth-create.mjs",
+                    "oauth:create:deploy":  "node scripts/cloudflare-oauth-create.mjs %CLOUDFLARE_ACCOUNT_ID% %CLOUDFLARE_OPS_WORKER_ORIGIN% --deploy"
+                },
+    "engines":  {
+                    "node":  "\u003e=18"
+                },
+    "keywords":  [
+                     "cloudflare-email-auth",
+                     "cloudflare-mcp",
+                     "cloudflare-dns-mcp",
+                     "cloudflare",
+                     "wrangler",
+                     "mcp-server",
+                     "model-context-protocol",
+                     "ai-agent",
+                     "dns",
+                     "dns-management",
+                     "dmarc",
+                     "bimi",
+                     "spf",
+                     "dkim",
+                     "email-routing",
+                     "email-authentication",
+                     "cloudflare-api",
+                     "workers",
+                     "cloudflare-workers",
+                     "zone-fixer",
+                     "approval-gated",
+                     "cloudflare-ops",
+                     "cloudflare-pages",
+                     "cloudflare-cache",
+                     "cloudflare-turnstile",
+                     "turnstile",
+                     "cache-purge",
+                     "pages-deployment"
+                 ],
+    "author":  "AMH - Artificial Mind Hive (Service Pricer LLC)",
+    "license":  "MIT",
+    "repository":  {
+                       "type":  "git",
+                       "url":  "git+https://github.com/pain2hustle/cloudflare-ops-mcp.git"
+                   },
+    "homepage":  "https://github.com/pain2hustle/cloudflare-ops-mcp",
+    "bugs":  {
+                 "url":  "https://github.com/pain2hustle/cloudflare-ops-mcp/issues"
+             },
+    "files":  [
+                  "src",
+                  "bin",
+                  "worker/index.js",
+                  "worker/oauth.js",
+                  "worker/wrangler.jsonc",
+                  "README.md",
+                  "MCP.md",
+                  "llms.txt",
+                  "server.json",
+                  "LICENSE",
+                  "scripts/generate-mcp-key.mjs",
+                  "SETUP.md",
+                  "PHASES.md",
+                  "OAUTH.md",
+                  "ROADMAP.md",
+                  "SECURITY.md",
+                  "scripts/oauth-setup.mjs",
+                  "scripts/cloudflare-oauth-create.mjs"
+              ],
+    "mcpName":  "io.github.pain2hustle/cloudflare-ops-mcp",
+    "funding":  {
+                    "type":  "custom",
+                    "url":  "https://servicepricer.app"
+                }
 }

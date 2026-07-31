@@ -1,6 +1,6 @@
-# ZoneMender Roadmap
+# Cloudflare Ops MCP Roadmap
 
-ZoneMender's direction is simple: make Cloudflare operations safe enough for AI agents and easy enough for non-traditional builders. The five-phase rollout is tracked in [PHASES.md](PHASES.md).
+Cloudflare Ops MCP's direction is simple: make Cloudflare operations safe enough for AI agents and easy enough for non-traditional builders. The five-phase rollout is tracked in [PHASES.md](PHASES.md).
 
 ## Next upgrades
 
@@ -14,16 +14,16 @@ ZoneMender's direction is simple: make Cloudflare operations safe enough for AI 
 
 ## Vercel-safe hosting ops (make Cloudflare as hands-off as Vercel — but self-owned)
 
-Goal: everything Vercel does automatically for a Next.js app, done through ZoneMender so a hands-on builder owns it for free. Each ships as CLI + lib + MCP tool, dry-run by default.
+Goal: everything Vercel does automatically for a Next.js app, done through Cloudflare Ops MCP so a hands-on builder owns it for free. Each ships as CLI + lib + MCP tool, dry-run by default.
 
-- ✅ **Cache purge** — whole-zone or per-URL (`zonemend purge`). Done: CLI + lib + MCP `purge_cache`.
+- ✅ **Cache purge** — whole-zone or per-URL (`cfops purge`). Done: CLI + lib + MCP `purge_cache`.
 - **Cache Rules (edge-TTL override)** — the big one: set a short edge TTL for HTML pages so deploys go live on their own (Vercel's "auto-fresh" behavior) while hashed assets stay long-cached. Ends the "purge after every deploy" chore. ⚠️ Uses CF's Rulesets engine (read-modify-write the `http_request_cache_settings` entrypoint) — MUST preserve existing rules and be tested on a throwaway zone before touching production cache config.
 - **Custom domain attach/detach** - bind a domain to a Worker or Pages project in one command, cleanly replacing conflicting DNS after an explicit dry-run diff. Needs a token with Workers/Pages + DNS edit.
 - **Deploy health-check** — after a ship: verify key paths return 200, DNS resolves to the worker, SSL is active. Fail loud.
 - **Worker ops** — list deployments, show current version, one-command rollback.
 - **Uptime/monitoring recipe** — scheduled health checks that alert on a down path.
 
-## What ZoneMender should not become
+## What Cloudflare Ops MCP should not become
 
 - It should not hide destructive DNS writes.
 - It should not require Global API Keys.

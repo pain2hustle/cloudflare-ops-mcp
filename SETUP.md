@@ -1,13 +1,13 @@
-# ZoneMender Setup
+# Cloudflare Ops MCP Setup
 
-ZoneMender is meant to make Cloudflare DNS work safe and reviewable:
+Cloudflare Ops MCP is meant to make Cloudflare operations safe and reviewable:
 
 1. Scan first.
 2. See the exact planned change.
 3. Approve only what you understand.
 4. Apply the DNS change only after review.
 
-ZoneMender is a standalone open-source tool. It does not include anyone's Cloudflare API keys, account credentials, hosted proxy token, or private connector. Each user brings their own Cloudflare authorization. See [PHASES.md](PHASES.md) for the public rollout path from local CLI to hosted OAuth connector.
+Cloudflare Ops MCP is a standalone open-source tool. It does not include anyone's Cloudflare API keys, account credentials, hosted proxy token, or private connector. Each user brings their own Cloudflare authorization. See [PHASES.md](PHASES.md) for the public rollout path from local CLI to hosted OAuth connector.
 
 ## Authorization paths
 
@@ -15,9 +15,9 @@ A user needs one of these authorization paths:
 
 1. **Local CLI path.** Create a least-privilege Cloudflare API token and export it as `CLOUDFLARE_API_TOKEN` in your own terminal.
 2. **Self-hosted MCP path.** Deploy the included Worker to your own Cloudflare account and store your own `CLOUDFLARE_API_TOKEN` and `MCP_ACCESS_KEY` as Worker secrets.
-3. **Host-app path.** If a separate product embeds ZoneMender, that product must implement its own OAuth/token vault and approval flow. ZoneMender itself does not provide shared hosted credentials.
+3. **Host-app path.** If a separate product embeds Cloudflare Ops MCP, that product must implement its own OAuth/token vault and approval flow. Cloudflare Ops MCP itself does not provide shared hosted credentials.
 
-ZoneMender can generate the **MCP access key** that protects the Worker endpoint. It cannot create a user's Cloudflare API token without Cloudflare approval. That ownership proof has to come from Cloudflare OAuth or the Cloudflare dashboard.
+Cloudflare Ops MCP can generate the **MCP access key** that protects the Worker endpoint. It cannot create a user's Cloudflare API token without Cloudflare approval. That ownership proof has to come from Cloudflare OAuth or the Cloudflare dashboard.
 
 ## Cloudflare token permissions
 
@@ -37,21 +37,21 @@ Use this when you are fixing your own domain from your terminal.
 
 ```sh
 export CLOUDFLARE_API_TOKEN=your_scoped_token
-npx zonemender scan example.com
-npx zonemender plan example.com --inbox owner@example.com
-npx zonemender dmarc example.com --policy quarantine --pct 100
-npx zonemender dmarc example.com --policy quarantine --pct 100 --apply
+npx cloudflare-ops-mcp scan example.com
+npx cloudflare-ops-mcp plan example.com --inbox owner@example.com
+npx cloudflare-ops-mcp dmarc example.com --policy quarantine --pct 100
+npx cloudflare-ops-mcp dmarc example.com --policy quarantine --pct 100 --apply
 ```
 
 Dry-run is the default. The write only happens when you add `--apply`.
 
 ## Hosted MCP with Wrangler
 
-Use this when you want an MCP-compatible agent or editor to call ZoneMender as a remote tool while keeping the Cloudflare API token in your own Worker secrets.
+Use this when you want an MCP-compatible agent or editor to call Cloudflare Ops MCP as a remote tool while keeping the Cloudflare API token in your own Worker secrets.
 
 ```sh
-git clone https://github.com/pain2hustle/zonemender.git
-cd zonemender
+git clone https://github.com/pain2hustle/cloudflare-ops-mcp.git
+cd cloudflare-ops-mcp
 npm install
 npm run worker:generate-key
 npm run worker:set-token
@@ -90,7 +90,7 @@ For hosted MCP use, keep the same rule: the agent should call read-only tools fi
 
 ## Why this is easier than raw Wrangler
 
-Wrangler is the official Cloudflare developer CLI. It is powerful, but it does not know your intent. ZoneMender adds intent:
+Wrangler is the official Cloudflare developer CLI. It is powerful, but it does not know your intent. Cloudflare Ops MCP adds intent:
 
 - "check my email auth" -> scans SPF, DMARC, DKIM, MX, BIMI, Email Routing.
 - "fix dmarc" -> changes only the DMARC policy tag.
@@ -98,4 +98,4 @@ Wrangler is the official Cloudflare developer CLI. It is powerful, but it does n
 - "apply" -> writes only after a dry-run diff.
 - "delete" -> blocked unless explicitly confirmed.
 
-Wrangler still handles deployment, secrets, and logs. ZoneMender handles safe Cloudflare DNS workflows.
+Wrangler still handles deployment, secrets, and logs. Cloudflare Ops MCP handles safe Cloudflare DNS, email, Pages, cache, and Turnstile workflows.

@@ -1,12 +1,12 @@
-# ZoneMender Phases
+# Cloudflare Ops MCP Phases
 
-ZoneMender is public, standalone infrastructure tooling. It is not tied to WALO, Covey, or any private operator account. The same core rule applies in every phase: scan first, show the diff, approve, then apply.
+Cloudflare Ops MCP is public, standalone infrastructure tooling. It is not tied to any private operator account. The same core rule applies in every phase: scan first, show the diff, approve, then apply.
 
 ## Phase 1 - Local CLI
 
 Status: live in the repo.
 
-A user exports their own scoped Cloudflare API token and runs ZoneMender locally.
+A user exports their own scoped Cloudflare API token and runs Cloudflare Ops MCP locally.
 
 - Reads `CLOUDFLARE_API_TOKEN` from the user's environment.
 - Dry-run by default.
@@ -46,7 +46,7 @@ Each recipe must preserve unrelated DNS records unless the user explicitly appro
 
 Status: planned.
 
-Make ZoneMender useful for non-technical owners and service providers.
+Make Cloudflare Ops MCP useful for non-technical owners and service providers.
 
 - HTML/Markdown reports showing what is wrong, why it matters, and the exact fix.
 - Before/after audit receipts for every applied change.
@@ -59,7 +59,7 @@ This phase makes the tool easier to trust before writes happen.
 
 Status: architecture target, not in the public CLI yet.
 
-A host app can embed ZoneMender and let users connect Cloudflare with OAuth instead of manually creating an API token.
+A host app can embed Cloudflare Ops MCP and let users connect Cloudflare with OAuth instead of manually creating an API token.
 
 The safe hosted flow is:
 
@@ -67,11 +67,11 @@ The safe hosted flow is:
 2. Cloudflare OAuth asks the user to approve scoped permissions for selected accounts/zones.
 3. The host app stores the OAuth token in its own encrypted token vault.
 4. The agent never receives the raw token.
-5. The agent calls approval-gated ZoneMender tools.
+5. The agent calls approval-gated Cloudflare Ops MCP tools.
 6. The host app shows the diff and applies only after the owner approves.
 7. The user can revoke access from Cloudflare at any time.
 
-Phase 5 is how ZoneMender becomes easy for strangers and businesses without making them paste secrets into chat. The public ZoneMender package stays generic; the OAuth/token-vault belongs to the host app that embeds it.
+Phase 5 is how Cloudflare Ops MCP becomes easy for strangers and businesses without making them paste secrets into chat. The public cloudflare-ops-mcp package stays generic; the OAuth/token-vault belongs to the host app that embeds it.
 
 ## Non-Negotiables
 

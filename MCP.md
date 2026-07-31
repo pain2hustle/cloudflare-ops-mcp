@@ -1,6 +1,6 @@
-# ZoneMender - Cloudflare DNS and Email Auth MCP Server
+# Cloudflare Ops MCP - DNS, Email, Pages, Cache, Turnstile
 
-ZoneMender includes an unofficial Cloudflare DNS MCP server for AI agents. It is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC. It is built to run as a Cloudflare Worker and deploy with Wrangler.
+Cloudflare Ops MCP includes an unofficial Cloudflare operations MCP server for AI agents. It is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC. It is built to run as a Cloudflare Worker and deploy with Wrangler.
 
 ## Tool lanes
 
@@ -22,7 +22,7 @@ ZoneMender includes an unofficial Cloudflare DNS MCP server for AI agents. It is
 
 ## Official status
 
-ZoneMender is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC. It is independent open-source software. It is not made by Cloudflare, not endorsed by Cloudflare, and not sponsored by Cloudflare. It is compatible with Cloudflare APIs and Wrangler.
+Cloudflare Ops MCP is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC. It is independent open-source software. It is not made by Cloudflare, not endorsed by Cloudflare, and not sponsored by Cloudflare. It is compatible with Cloudflare APIs and Wrangler.
 
 ## Wrangler deploy
 
@@ -33,6 +33,17 @@ npx wrangler secret put MCP_ACCESS_KEY
 npx wrangler deploy
 ```
 
+## OAuth hosted app path
+
+A Git deployment should not rely on one forever mega token. Set up Cloudflare OAuth, store the OAuth client values as Worker secrets, then send users to:
+
+```txt
+https://<your-worker-host>/oauth/cloudflare/start?tenant=<user-or-account-id>
+```
+
+After consent, MCP tools can include the same `tenant` value. The Worker uses the tenant token server-side and never returns it to the agent.
+
+See [OAUTH.md](OAUTH.md).
 ## MCP client
 
 Point an MCP client at the deployed Worker URL and send:
@@ -46,4 +57,4 @@ Use dry-run tools first, inspect the diff, then apply only when the owner approv
 ## Contact
 
 - Service Pricer: https://servicepricer.app
-- GitHub: https://github.com/pain2hustle/zonemender
+- GitHub: https://github.com/pain2hustle/cloudflare-ops-mcp

@@ -1,12 +1,16 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "zonemender-mcp",
+  "name": "cloudflare-ops-mcp",
   "main": "index.js",
   "compatibility_date": "2025-07-01",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "cfops.nothingunseen.com/*", "zone_name": "nothingunseen.com" }
+  ],
   "kv_namespaces": [
-    { "binding": "ZONEMENDER_OAUTH", "id": "1854b6d5bc8c4860bc914412443a0172" }
+    { "binding": "CLOUDFLARE_OPS_OAUTH", "id": "1854b6d5bc8c4860bc914412443a0172" }
   ]
   // OAuth secrets for hosted connectors:
   //   npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_ID

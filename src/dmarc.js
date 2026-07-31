@@ -189,7 +189,7 @@ export async function setDmarcPolicy(client, domain, policy, extra = {}, opts = 
   const plan = await applyDnsRecord(
     client,
     domain,
-    { type: "TXT", name, content, comment: "DMARC policy (zonemender)" },
+    { type: "TXT", name, content, comment: "DMARC policy (cloudflare-ops-mcp)" },
     { apply: opts.apply, zoneId: zone_id, records }
   );
 

@@ -1,7 +1,7 @@
 // src/cache.js
-// Cloudflare cache purge — the one common CF op zonemender didn't cover yet.
+// Cloudflare cache purge — the one common CF op cloudflare-ops-mcp didn't cover yet.
 //
-// Same safety model as the rest of zonemender:
+// Same safety model as the rest of cloudflare-ops-mcp:
 //  - DRY-RUN by DEFAULT. Nothing is purged unless { apply: true } is passed.
 //  - The API token lives only in the CloudflareClient (env CLOUDFLARE_API_TOKEN)
 //    and is never logged or echoed.

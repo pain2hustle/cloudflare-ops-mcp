@@ -2,7 +2,7 @@
 .env.local
 node_modules
 *.log
-zonemender-audit.log
+cfopser-audit.log
 # wrangler secrets / build artifacts (never commit a token)
 .dev.vars
 .dev.vars.*

@@ -1,5 +1,5 @@
-// zonemender-mcp — a remote MCP server (Cloudflare Worker) that exposes the
-// zonemender engine as MCP tools over a URL. Any MCP client (Claude, Cursor,
+// cloudflare-ops-mcp-mcp — a remote MCP server (Cloudflare Worker) that exposes the
+// cloudflare-ops-mcp engine as MCP tools over a URL. Any MCP client (Claude, Cursor,
 // an agent) can point at it and scan / plan / fix a Cloudflare zone.
 //
 // HARDENED vs a naive version, on purpose:
@@ -24,11 +24,12 @@ import { setupEmailRouting } from "../src/email.js";
 import { planEmailAuth } from "../src/plan.js";
 import { purgeCache } from "../src/cache.js";
 import { planPagesCutover } from "../src/pages.js";
-import { getOAuthAccessToken, handleOAuthCallback, handleOAuthStart, handleOAuthStatus } from "./oauth.js";
+import { createTurnstileWidget } from "../src/turnstile.js";
+import { getOAuthAccessToken, getOAuthConfigStatus, handleOAuthCallback, handleOAuthStart, handleOAuthStatus } from "./oauth.js";
 
 const SERVER = {
-  name: "zonemender-mcp",
-  title: "Cloudflare DNS, Email-Auth & Cache Ops (zonemender)",
+  name: "cloudflare-ops-mcp",
+  title: "Cloudflare Ops MCP (DNS, Email, Pages, Cache, Turnstile)",
   version: "0.1.0",
 };
 const PROTOCOL_FALLBACK = "2025-06-18";
@@ -173,6 +174,30 @@ const TOOLS = [
       required: ["domain"],
     },
   },
+  {
+    name: "create_turnstile_widget",
+    description:
+      "Plan or create a Cloudflare Turnstile widget for a domain. DRY-RUN by default; creates the widget only when apply=true. Returns the public sitekey and one-time secret when applied.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        domain: { type: "string", description: "Primary zone/domain, e.g. example.com" },
+        name: { type: "string", description: "Optional widget display name." },
+        mode: {
+          type: "string",
+          enum: ["managed", "non-interactive", "invisible"],
+          description: "Turnstile mode. Default managed.",
+        },
+        extra_domains: {
+          type: "array",
+          items: { type: "string" },
+          description: "Additional hostnames allowed to use this widget.",
+        },
+        apply: { type: "boolean", description: "Default false = dry-run." },
+      },
+      required: ["domain"],
+    },
+  },
 ];
 
 // ── Tool implementations (each returns a plain object; serialized as text) ──
@@ -266,6 +291,14 @@ async function runTool(name, args, env) {
         apply: args.apply === true,
       });
 
+
+    case "create_turnstile_widget":
+      return await createTurnstileWidget(client, domain, {
+        name: args.name,
+        mode: args.mode || "managed",
+        extraDomains: args.extra_domains || [],
+        apply: args.apply === true,
+      });
     default:
       return { error: `unknown tool: ${name}` };
   }
@@ -291,16 +324,10 @@ async function handleRpc(msg, env) {
       capabilities: { tools: { listChanged: false } },
       serverInfo: SERVER,
       instructions:
-        "zonemender audits and fixes a domain's Cloudflare DNS and email-authentication setup. " +
-        "Use it to: scan a Cloudflare zone (all DNS records plus parsed SPF, DMARC, BIMI, and Email Routing status); " +
-        "diagnose email deliverability and spoofing gaps; and apply targeted fixes — set or enforce a DMARC policy " +
-        "(none → quarantine → reject), publish or repair SPF, set up BIMI (your brand logo in inboxes, gated on DMARC " +
-        "enforcement), configure Email Routing forwards, or upsert any single DNS record (TXT/CNAME/MX/A/…). " +
-        "Safety: every write is DRY-RUN by default and returns a diff; nothing changes unless you pass apply=true, and " +
-        "records are never deleted without explicit confirmation. The scoped Cloudflare API token is supplied to the " +
-        "server as a secret, never as a tool argument. " +
-        "zonemender is an independent, third-party open-source tool — not affiliated with, endorsed by, or sponsored by " +
-        "Cloudflare, Inc.; \"Cloudflare\" is used nominatively to name the service this tool works with.",
+        "Cloudflare Ops MCP audits and safely changes common Cloudflare work across DNS, email authentication, Pages cutovers, cache purge, Turnstile widgets, and Email Routing. " +
+        "Use it to scan a Cloudflare zone, diagnose email deliverability and spoofing gaps, apply targeted DNS/DMARC/BIMI/Email Routing fixes, cut a hostname to Cloudflare Pages, purge cache, or create a Turnstile widget. " +
+        "Safety: every write is DRY-RUN by default and returns a diff; nothing changes unless you pass apply=true. The scoped Cloudflare API token is supplied to the server as a secret, never as a tool argument. " +
+        "Cloudflare Ops MCP / cloudflare-ops-mcp is an independent, third-party open-source tool - not affiliated with, endorsed by, or sponsored by Cloudflare, Inc.; Cloudflare is used nominatively to name the service this tool works with.",
     });
   }
   if (method === "ping") return rpcResult(id, {});
@@ -333,29 +360,89 @@ const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization, X-MCP-Key, Mcp-Session-Id, Mcp-Protocol-Version",
+  "Cache-Control": "no-store",
 };
 
-export default {
-  async fetch(request, env) {
+function renderLogoSvg() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Cloudflare Ops MCP"><rect width="512" height="512" rx="96" fill="#07140d"/><path d="M138 294c0-90 73-163 163-163 35 0 68 11 94 30l-46 56c-14-9-30-14-48-14-50 0-91 41-91 91s41 91 91 91c18 0 34-5 48-14l46 56c-26 19-59 30-94 30-90 0-163-73-163-163Z" fill="#6ee7a3"/><path d="M107 158h93v72h-93v-72Zm0 124h93v72h-93v-72Z" fill="#f5f1e8"/><circle cx="347" cy="294" r="42" fill="#f5f1e8"/></svg>`;
+}
+function renderStatusHtml(info) {
+  const tools = info.tools.map((tool) => `<span class="chip">${tool}</span>`).join("");
+  const oauthState = info.oauth.configured ? "OAuth ready" : "OAuth setup needed";
+  const oauthClass = info.oauth.configured ? "ok" : "warn";
+  const start = info.oauth.routes.start;
+  const status = info.oauth.routes.status;
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${info.server.title}</title>
+<meta name="description" content="Cloudflare Ops MCP with OAuth connect, DNS, Email, Pages, Cache, and Turnstile tools.">
+<meta name="theme-color" content="#6ee7a3">
+<style>
+:root{--green:#6ee7a3;--green-2:#16a34a;--ink:#102118;--muted:#587064;--cream:#f5f1e8;--panel:#fffaf0;--line:#d9eadc;--dark:#07140d}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink);background:radial-gradient(circle at 20% 0%,rgba(110,231,163,.42),transparent 32%),linear-gradient(135deg,#f8f4ea 0%,#edf8ee 48%,#f5f1e8 100%)}
+.wrap{width:min(1080px,100%);margin:0 auto;padding:38px 18px 54px}.top{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:42px}.brand{display:flex;align-items:center;gap:12px;font-weight:900;letter-spacing:.02em}.mark{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--green),#d7ffd9);box-shadow:0 0 0 1px rgba(7,20,13,.12),0 12px 28px rgba(22,163,74,.22)}.pill{border:1px solid rgba(16,33,24,.12);background:rgba(255,250,240,.72);padding:8px 11px;border-radius:999px;font-size:12px;font-weight:800;color:var(--muted)}
+.hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);gap:26px;align-items:stretch}.copy{padding:8px 0 0}.eyebrow{font-size:12px;font-weight:900;text-transform:uppercase;color:var(--green-2);letter-spacing:.08em;margin-bottom:12px}h1{font-size:clamp(38px,6vw,72px);line-height:.95;margin:0 0 18px;letter-spacing:0;color:var(--dark)}p{font-size:16px;line-height:1.65;color:var(--muted);max-width:680px;margin:0 0 22px}.actions{display:flex;flex-wrap:wrap;gap:10px}.btn{appearance:none;border:1px solid rgba(16,33,24,.14);border-radius:12px;padding:12px 15px;font-weight:900;text-decoration:none;color:var(--ink);background:rgba(255,250,240,.76);box-shadow:0 12px 28px rgba(16,33,24,.08)}.btn.primary{background:var(--green);color:#062012;border-color:rgba(6,32,18,.2)}.btn:hover{transform:translateY(-1px)}
+.panel{background:rgba(255,250,240,.78);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 24px 70px rgba(16,33,24,.12);backdrop-filter:blur(12px)}.status{display:grid;gap:12px}.row{display:flex;align-items:center;justify-content:space-between;gap:14px;border-bottom:1px solid var(--line);padding:0 0 11px}.row:last-child{border-bottom:0;padding-bottom:0}.label{font-size:12px;font-weight:900;color:var(--muted);text-transform:uppercase}.value{font-size:13px;font-weight:900;text-align:right}.value.ok{color:#15803d}.value.warn{color:#9a5b00}.tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.chip{font-size:12px;font-weight:800;border:1px solid rgba(22,163,74,.22);background:rgba(110,231,163,.18);color:#14532d;border-radius:999px;padding:7px 9px}.note{margin-top:18px;font-size:12px;color:var(--muted);line-height:1.55}
+@media (max-width:760px){.top{margin-bottom:26px}.hero{grid-template-columns:1fr}h1{font-size:42px}.actions{display:grid}.btn{text-align:center}.panel{border-radius:14px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="top"><div class="brand"><span class="mark"></span><span>Cloudflare Ops MCP</span></div><div class="pill">Green mode / no mega token</div></div>
+  <section class="hero">
+    <div class="copy">
+      <div class="eyebrow">OAuth-first Cloudflare control</div>
+      <h1>Connect Cloudflare. Keep tokens out of chat.</h1>
+      <p>DNS, Email Routing, DMARC, BIMI, Pages cutovers, cache purge, and Turnstile tools stay approval-gated. Users connect through Cloudflare OAuth instead of one permanent all-access token.</p>
+      <div class="actions">
+        <a class="btn primary" href="${start}">Connect Cloudflare</a>
+        <a class="btn" href="${status}">Check OAuth Status</a>
+        <a class="btn" href="/oauth/cloudflare/status?tenant=default">Tenant Default</a>
+        <a class="btn" href="?format=json">View JSON</a>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="status">
+        <div class="row"><span class="label">Worker</span><span class="value ok">Live</span></div>
+        <div class="row"><span class="label">OAuth</span><span class="value ${oauthClass}">${oauthState}</span></div>
+        <div class="row"><span class="label">MCP Lock</span><span class="value ${info.auth_required ? "ok" : "warn"}">${info.auth_required ? "Access key set" : "Needs MCP_ACCESS_KEY"}</span></div>
+        <div class="row"><span class="label">Fallback Token</span><span class="value ${info.token_configured ? "ok" : "warn"}">${info.token_configured ? "Configured" : "OAuth only"}</span></div>
+      </div>
+      <div class="tools">${tools}</div>
+      <div class="note">Git can ship this connector safely. Secrets are set with Wrangler after deploy, and users can revoke OAuth in Cloudflare.</div>
+    </div>
+  </section>
+</main>
+</body>
+</html>`;
+}
+async function fetchInner(request, env) {
     if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
 
     const url = new URL(request.url);
+    if (url.pathname === "/logo.svg") return new Response(renderLogoSvg(), { headers: { "content-type": "image/svg+xml", ...CORS } });
     if (url.pathname === "/oauth/cloudflare/start") return handleOAuthStart(request, env);
     if (url.pathname === "/oauth/cloudflare/callback") return handleOAuthCallback(request, env);
     if (url.pathname === "/oauth/cloudflare/status") return handleOAuthStatus(request, env);
-    // Health/info on GET.
+    // Health/info on GET. Browsers get a small green connect page; API clients get JSON.
     if (request.method === "GET") {
-      return new Response(
-        JSON.stringify({
-          ok: true,
-          server: SERVER,
-          tools: TOOLS.map((t) => t.name),
-          auth_required: !!env.MCP_ACCESS_KEY,
-          token_configured: !!env.CLOUDFLARE_API_TOKEN,
-          note: "POST JSON-RPC 2.0 (MCP) to this endpoint.",
-        }, null, 2),
-        { status: 200, headers: { "content-type": "application/json", ...CORS } }
-      );
+      const info = {
+        ok: true,
+        server: SERVER,
+        tools: TOOLS.map((t) => t.name),
+        auth_required: !!env.MCP_ACCESS_KEY,
+        token_configured: !!env.CLOUDFLARE_API_TOKEN,
+        oauth: getOAuthConfigStatus(env, url.origin),
+        note: "POST JSON-RPC 2.0 (MCP) to this endpoint. Use /oauth/cloudflare/start?tenant=default to connect Cloudflare without a permanent mega token.",
+      };
+      const wantsJson = url.searchParams.get("format") === "json" || /application\/json/i.test(request.headers.get("accept") || "");
+      if (!wantsJson && /text\/html/i.test(request.headers.get("accept") || "")) {
+        return new Response(renderStatusHtml(info), { status: 200, headers: { "content-type": "text/html; charset=utf-8", ...CORS } });
+      }
+      return new Response(JSON.stringify(info, null, 2), { status: 200, headers: { "content-type": "application/json", ...CORS } });
     }
     if (request.method !== "POST") {
       return new Response("Method Not Allowed", { status: 405, headers: CORS });
@@ -405,5 +492,15 @@ export default {
       return new Response(sse, { status: 200, headers: { "content-type": "text/event-stream", "cache-control": "no-cache", ...CORS } });
     }
     return new Response(JSON.stringify(payload), { status: 200, headers: { "content-type": "application/json", ...CORS } });
+}
+
+export default {
+  async fetch(request, env) {
+    try {
+      return await fetchInner(request, env);
+    } catch (e) {
+      const safe = redactToken(String((e && e.stack) || (e && e.message) || e));
+      return new Response(JSON.stringify({ ok: false, error: "worker_exception", detail: safe.split("\\n").slice(0, 3).join("\\n") }, null, 2), { status: 500, headers: { "content-type": "application/json", ...CORS } });
+    }
   },
 };

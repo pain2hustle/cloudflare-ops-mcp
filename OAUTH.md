@@ -1,31 +1,35 @@
 # Cloudflare OAuth Connector
 
-This is the Phase 5 hosted connector path. It lets a host app connect a user's Cloudflare account without asking them to paste API tokens into chat.
+This is the no-mega-token path.
 
-## What ships here
+The Git repo can safely ship the OAuth routes, setup helper, KV binding shape, and MCP tools. It must not ship a permanent Cloudflare API token, OAuth client secret, user access token, refresh token, or account-wide admin credential.
 
-The Worker exposes three OAuth routes:
+## What Git can include
 
-- `GET /oauth/cloudflare/start?tenant=<id>` - redirects the user to Cloudflare consent.
-- `GET /oauth/cloudflare/callback` - exchanges the authorization code for a token and stores it server-side.
-- `GET /oauth/cloudflare/status?tenant=<id>` - reports whether that tenant has a Cloudflare token stored, without exposing the token.
+- `worker/oauth.js`: OAuth start/callback/status routes.
+- `worker/wrangler.jsonc`: the `CLOUDFLARE_OPS_OAUTH` KV binding shape.
+- `scripts/oauth-setup.mjs`: prints the redirect URI and secret setup commands.
+- Docs that explain required scopes and deployment steps.
 
-MCP tools accept an optional `tenant` argument. If a tenant has connected Cloudflare, the Worker uses that tenant OAuth token. Otherwise it falls back to the self-hosted `CLOUDFLARE_API_TOKEN` secret.
+## What Git must not include
 
-## Required Cloudflare OAuth client settings
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_OAUTH_CLIENT_SECRET`
+- OAuth access/refresh tokens
+- `.dev.vars` with real values
+- Any one forever mega token
 
-Create an OAuth client in Cloudflare, then configure:
+## How a deployed Git app gets OAuth
 
-- Redirect URI: `https://<your-worker-host>/oauth/cloudflare/callback`
-- Authorization URL: `https://dash.cloudflare.com/oauth2/auth`
-- Token URL: `https://dash.cloudflare.com/oauth2/token`
-- Scopes:
-  - `zone.read`
-  - `dns.write`
-  - `email-routing-address.write`
-  - `email-routing-rule.write`
+1. Deploy the Worker from this repo.
+2. Create a Cloudflare OAuth client in the Cloudflare dashboard or API.
+3. Set the redirect URI to:
 
-## Worker secrets
+```txt
+https://<your-worker-host>/oauth/cloudflare/callback
+```
+
+4. Store the OAuth client values as Worker secrets:
 
 ```sh
 cd worker
@@ -35,20 +39,57 @@ npx wrangler secret put CLOUDFLARE_OAUTH_REDIRECT_URI
 npx wrangler deploy
 ```
 
-Optional custom scope list:
+5. Send the user to:
+
+```txt
+https://<your-worker-host>/oauth/cloudflare/start?tenant=<user-or-account-id>
+```
+
+6. Cloudflare shows the consent screen. After approval, the Worker stores the tenant token in `CLOUDFLARE_OPS_OAUTH` KV. MCP tools can then be called with `{ "tenant": "<user-or-account-id>" }`.
+
+## Scopes
+
+Default core scopes:
+
+```txt
+zone.read dns.write email-routing-address.write email-routing-rule.write
+```
+
+For broader Cloudflare Ops, configure the OAuth client with only the additional scopes your UI exposes, then set the exact selected scope list as a Worker secret:
 
 ```sh
 npx wrangler secret put CLOUDFLARE_OAUTH_SCOPES
 ```
 
-## Storage
+Example value:
 
-OAuth state and tokens are stored in the `ZONEMENDER_OAUTH` KV binding. The public package includes the binding shape; operators deploying their own Worker should create their own KV namespace and update `worker/wrangler.jsonc`.
+```txt
+zone.read dns.write email-routing-address.write email-routing-rule.write
+```
+
+Do not blindly request every available scope. If you add Pages, cache purge, Turnstile, Workers, KV, R2, D1, or account-level tools, add the matching Cloudflare OAuth scopes only when those tools exist and remain approval-gated.
+
+Cloudflare says OAuth apps use the Authorization Code flow, and OAuth scope names correspond to Cloudflare API token permission names. Use Cloudflare's current scope list when creating the OAuth client.
+
+## Routes
+
+- `GET /oauth/cloudflare/start?tenant=<id>` redirects the user to Cloudflare consent.
+- `GET /oauth/cloudflare/callback` exchanges the code for a token and stores it server-side.
+- `GET /oauth/cloudflare/status?tenant=<id>` reports connection status without exposing the token.
+
+The Worker root JSON also reports whether OAuth is configured and shows the start/callback/status URLs.
 
 ## Safety model
 
-- The agent never receives the OAuth access token.
-- The token is only read inside the Worker.
-- MCP remains locked by `MCP_ACCESS_KEY`.
-- Mutating DNS tools stay dry-run until `apply: true`.
+- OAuth access tokens stay inside the Worker/KV.
+- Agents never receive Cloudflare tokens.
+- The MCP endpoint still requires `MCP_ACCESS_KEY`.
+- Mutating tools stay dry-run until `apply: true`.
 - Users can revoke the OAuth client in Cloudflare.
+- Prefer OAuth per user/tenant over a shared permanent API token.
+
+## Setup helper
+
+```sh
+npm run oauth:setup -- https://<your-worker-host>
+```

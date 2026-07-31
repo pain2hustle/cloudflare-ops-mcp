@@ -1,50 +1,50 @@
 {
-  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.pain2hustle/zonemender",
-  "title": "ZoneMender - Cloudflare DNS and Email Auth MCP Server",
-  "description": "Unofficial Cloudflare DNS/email-auth MCP server with approval-gated fixes.",
-  "version": "0.1.0",
-  "repository": {
-    "url": "https://github.com/pain2hustle/zonemender",
-    "source": "github"
-  },
-  "remotes": [
-    {
-      "type": "streamable-http",
-      "url": "https://zonemender-mcp.{workers_subdomain}.workers.dev",
-      "variables": {
-        "workers_subdomain": {
-          "description": "Your Cloudflare Workers subdomain after deploying worker/ with Wrangler.",
-          "isRequired": true
-        }
-      },
-      "headers": [
-        {
-          "name": "Authorization",
-          "description": "Bearer token for MCP_ACCESS_KEY configured as a Worker secret.",
-          "isRequired": true,
-          "isSecret": true
-        }
-      ]
-    }
-  ],
-  "packages": [
-    {
-      "registryType": "npm",
-      "identifier": "zonemender",
-      "version": "0.1.0",
-      "transport": {
-        "type": "stdio"
-      },
-      "environmentVariables": [
-        {
-          "name": "CLOUDFLARE_API_TOKEN",
-          "description": "Scoped Cloudflare API token with Zone Read, DNS Edit, and Email Routing Rules Edit permissions. Never use a Global API Key.",
-          "isRequired": true,
-          "format": "string",
-          "isSecret": true
-        }
-      ]
-    }
-  ]
+    "$schema":  "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+    "name":  "io.github.pain2hustle/cloudflare-ops-mcp",
+    "title":  "Cloudflare Ops MCP - DNS, Email, Pages, Cache, Turnstile",
+    "description":  "Unofficial Cloudflare Ops MCP server with approval-gated DNS, Email Routing, DMARC/SPF/BIMI, Pages cutover, cache purge, and Turnstile tools.",
+    "version":  "0.1.0",
+    "repository":  {
+                       "url":  "https://github.com/pain2hustle/cloudflare-ops-mcp",
+                       "source":  "github"
+                   },
+    "remotes":  [
+                    {
+                        "type":  "streamable-http",
+                        "url":  "https://cfops.nothingunseen.com",
+                        "variables":  {
+                                          "workers_subdomain":  {
+                                                                    "description":  "Your Cloudflare Workers subdomain after deploying worker/ with Wrangler.",
+                                                                    "isRequired":  true
+                                                                }
+                                      },
+                        "headers":  [
+                                        {
+                                            "name":  "Authorization",
+                                            "description":  "Bearer token for MCP_ACCESS_KEY configured as a Worker secret.",
+                                            "isRequired":  true,
+                                            "isSecret":  true
+                                        }
+                                    ]
+                    }
+                ],
+    "packages":  [
+                     {
+                         "registryType":  "npm",
+                         "identifier":  "cloudflare-ops-mcp",
+                         "version":  "0.1.0",
+                         "transport":  {
+                                           "type":  "stdio"
+                                       },
+                         "environmentVariables":  [
+                                                      {
+                                                          "name":  "CLOUDFLARE_API_TOKEN",
+                                                          "description":  "Scoped Cloudflare API token with only the permissions needed for the tools you use, such as Zone Read, DNS Edit, Email Routing Rules Edit, Cache Purge, and Turnstile Edit. Never use a Global API Key.",
+                                                          "isRequired":  true,
+                                                          "format":  "string",
+                                                          "isSecret":  true
+                                                      }
+                                                  ]
+                     }
+                 ]
 }

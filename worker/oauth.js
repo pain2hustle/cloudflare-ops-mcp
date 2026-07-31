@@ -1,5 +1,5 @@
 // worker/oauth.js
-// Cloudflare OAuth helper routes for hosted ZoneMender connectors.
+// Cloudflare OAuth helper routes for hosted Cloudflare Ops MCP connectors.
 // Tokens stay server-side in KV; agents call approval-gated MCP tools instead
 // of receiving raw OAuth tokens.
 
@@ -25,7 +25,7 @@ function requireOAuthEnv(env) {
   if (!env.CLOUDFLARE_OAUTH_CLIENT_ID) missing.push("CLOUDFLARE_OAUTH_CLIENT_ID");
   if (!env.CLOUDFLARE_OAUTH_CLIENT_SECRET) missing.push("CLOUDFLARE_OAUTH_CLIENT_SECRET");
   if (!env.CLOUDFLARE_OAUTH_REDIRECT_URI) missing.push("CLOUDFLARE_OAUTH_REDIRECT_URI");
-  if (!env.ZONEMENDER_OAUTH) missing.push("ZONEMENDER_OAUTH KV binding");
+  if (!env.CLOUDFLARE_OPS_OAUTH) missing.push("CLOUDFLARE_OPS_OAUTH KV binding");
   return missing;
 }
 
@@ -45,7 +45,7 @@ function randomState() {
   return b64url(bytes);
 }
 
-function scopes(env) {
+export function getOAuthScopes(env) {
   return String(env.CLOUDFLARE_OAUTH_SCOPES || DEFAULT_SCOPES.join(" "))
     .split(/[\s,]+/)
     .map((s) => s.trim())
@@ -62,7 +62,7 @@ export async function handleOAuthStart(request, env) {
   const tenant = cleanTenant(url.searchParams.get("tenant"));
   const returnTo = url.searchParams.get("return_to") || "/oauth/cloudflare/status";
   const state = randomState();
-  await env.ZONEMENDER_OAUTH.put("state:" + state, JSON.stringify({ tenant, returnTo, created_at: Date.now() }), {
+  await env.CLOUDFLARE_OPS_OAUTH.put("state:" + state, JSON.stringify({ tenant, returnTo, created_at: Date.now() }), {
     expirationTtl: STATE_TTL_SECONDS,
   });
 
@@ -70,7 +70,7 @@ export async function handleOAuthStart(request, env) {
   auth.searchParams.set("response_type", "code");
   auth.searchParams.set("client_id", env.CLOUDFLARE_OAUTH_CLIENT_ID);
   auth.searchParams.set("redirect_uri", env.CLOUDFLARE_OAUTH_REDIRECT_URI);
-  auth.searchParams.set("scope", scopes(env).join(" "));
+  auth.searchParams.set("scope", getOAuthScopes(env).join(" "));
   auth.searchParams.set("state", state);
 
   return Response.redirect(auth.toString(), 302);
@@ -91,9 +91,9 @@ export async function handleOAuthCallback(request, env) {
   }
   if (!code || !state) return json({ ok: false, error: "missing_code_or_state" }, 400);
 
-  const raw = await env.ZONEMENDER_OAUTH.get("state:" + state);
+  const raw = await env.CLOUDFLARE_OPS_OAUTH.get("state:" + state);
   if (!raw) return json({ ok: false, error: "bad_or_expired_state" }, 400);
-  await env.ZONEMENDER_OAUTH.delete("state:" + state);
+  await env.CLOUDFLARE_OPS_OAUTH.delete("state:" + state);
   const session = JSON.parse(raw);
   const tenant = cleanTenant(session.tenant);
 
@@ -122,11 +122,11 @@ export async function handleOAuthCallback(request, env) {
     access_token: tokenJson.access_token,
     refresh_token: tokenJson.refresh_token || null,
     token_type: tokenJson.token_type || "bearer",
-    scope: tokenJson.scope || scopes(env).join(" "),
+    scope: tokenJson.scope || getOAuthScopes(env).join(" "),
     expires_at: tokenJson.expires_in ? now + Number(tokenJson.expires_in) * 1000 : null,
     connected_at: now,
   };
-  await env.ZONEMENDER_OAUTH.put("token:" + tenant, JSON.stringify(record));
+  await env.CLOUDFLARE_OPS_OAUTH.put("token:" + tenant, JSON.stringify(record));
 
   const done = new URL(session.returnTo || "/oauth/cloudflare/status", url.origin);
   done.searchParams.set("tenant", tenant);
@@ -135,10 +135,10 @@ export async function handleOAuthCallback(request, env) {
 }
 
 export async function handleOAuthStatus(request, env) {
-  if (!env.ZONEMENDER_OAUTH) return json({ ok: false, connected: false, error: "missing_kv_binding" }, 503);
+  if (!env.CLOUDFLARE_OPS_OAUTH) return json({ ok: false, connected: false, error: "missing_kv_binding" }, 503);
   const url = new URL(request.url);
   const tenant = cleanTenant(url.searchParams.get("tenant"));
-  const raw = await env.ZONEMENDER_OAUTH.get("token:" + tenant);
+  const raw = await env.CLOUDFLARE_OPS_OAUTH.get("token:" + tenant);
   if (!raw) return json({ ok: true, connected: false, tenant });
   const record = JSON.parse(raw);
   return json({
@@ -153,9 +153,24 @@ export async function handleOAuthStatus(request, env) {
 }
 
 export async function getOAuthAccessToken(env, tenant = "default") {
-  if (!env.ZONEMENDER_OAUTH) return null;
-  const raw = await env.ZONEMENDER_OAUTH.get("token:" + cleanTenant(tenant));
+  if (!env.CLOUDFLARE_OPS_OAUTH) return null;
+  const raw = await env.CLOUDFLARE_OPS_OAUTH.get("token:" + cleanTenant(tenant));
   if (!raw) return null;
   const record = JSON.parse(raw);
   return record.access_token || null;
+}
+
+export function getOAuthConfigStatus(env, origin = "") {
+  const missing = requireOAuthEnv(env);
+  const startUrl = `${origin}/oauth/cloudflare/start?tenant=default`;
+  return {
+    configured: missing.length === 0,
+    missing,
+    scopes: getOAuthScopes(env),
+    routes: {
+      start: startUrl,
+      callback: `${origin}/oauth/cloudflare/callback`,
+      status: `${origin}/oauth/cloudflare/status?tenant=default`,
+    },
+  };
 }

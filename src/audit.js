@@ -3,7 +3,7 @@
 
 import { appendFileSync } from "node:fs";
 
-const DEFAULT_AUDIT_PATH = "./zonemender-audit.log";
+const DEFAULT_AUDIT_PATH = "./cloudflare-ops-mcp-audit.log";
 
 /**
  * Defensively strip anything that could be a secret from an audit entry.
@@ -32,7 +32,7 @@ function scrub(value) {
  * Append a single audit entry as one JSON line.
  * The caller supplies `ts` (a timestamp) — pure logic does not call Date.now().
  *
- * @param {string|null} path defaults to ./zonemender-audit.log
+ * @param {string|null} path defaults to ./cloudflare-ops-mcp-audit.log
  * @param {object} entry { ts, action, domain, record, before, after }
  * @returns {object} the (scrubbed) entry that was written
  */

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// bin/zonemend.js
-// zonemender CLI — scan / plan / dns / email / dmarc / bimi / verify.
+// bin/cfops.js
+// cloudflare-ops-mcp CLI — scan / plan / dns / email / dmarc / bimi / verify.
 //
 // Safety model:
 //  - Dry-run by DEFAULT. Nothing is written unless you pass --apply.
@@ -24,10 +24,10 @@ import {
   AUDIT_DEFAULT_PATH,
 } from "../src/index.js";
 
-const USAGE = `zonemender — a standalone Cloudflare zone fixer (dry-run by default)
+const USAGE = `cloudflare-ops-mcp — a standalone Cloudflare zone fixer (dry-run by default)
 
 Usage:
-  zonemend <command> <domain> [options]
+  cfops <command> <domain> [options]
 
 Commands:
   scan   <domain>                          Full read-only snapshot (DNS, SPF, DKIM, DMARC, BIMI, routing)
@@ -63,11 +63,11 @@ Environment:
                          Never use the Global API Key.
 
 Examples:
-  zonemend scan example.com
-  zonemend dmarc example.com --policy quarantine --rua mailto:dmarc@example.com        # dry-run
-  zonemend dmarc example.com --policy quarantine --rua mailto:dmarc@example.com --apply
-  zonemend bimi example.com --logo https://example.com/bimi/logo.svg                    # dry-run
-  zonemend dns example.com --type TXT --name @ --content "google-site-verification=..."  # dry-run (adds; won't clobber SPF)
+  cfops scan example.com
+  cfops dmarc example.com --policy quarantine --rua mailto:dmarc@example.com        # dry-run
+  cfops dmarc example.com --policy quarantine --rua mailto:dmarc@example.com --apply
+  cfops bimi example.com --logo https://example.com/bimi/logo.svg                    # dry-run
+  cfops dns example.com --type TXT --name @ --content "google-site-verification=..."  # dry-run (adds; won't clobber SPF)
 `;
 
 function log(...args) {

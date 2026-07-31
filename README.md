@@ -1,24 +1,24 @@
-# ZoneMender - Unofficial Cloudflare DNS, Email Auth, BIMI, DMARC, SPF, Email Routing & MCP Server for AI Agents
+# Cloudflare Ops MCP - Unofficial Cloudflare DNS, Email, Pages, Cache, Turnstile & MCP Toolkit for AI Agents
 
-**An independent Cloudflare DNS, DMARC, BIMI, SPF, Email Routing, and Wrangler-friendly MCP toolkit for developers, operators, and AI agents.**
+**An independent Cloudflare Ops, DNS, DMARC, BIMI, SPF, Email Routing, Pages, cache, Turnstile, and Wrangler-friendly MCP toolkit for developers, operators, and AI agents.**
 
-ZoneMender scans a Cloudflare zone, computes a **diff** of desired vs current **DNS / Email Routing / BIMI / DMARC / SPF** configuration, and **applies fixes only after explicit approval**. It is built for people who want an AI agent to help with Cloudflare safely: scan first, show the plan, then write only when the owner approves.
+Cloudflare Ops MCP scans Cloudflare configuration, computes a **diff** of desired vs current **DNS / Email Routing / BIMI / DMARC / SPF / Pages / cache / Turnstile** setup, and **applies fixes only after explicit approval**. It is built for people who want an AI agent to help with Cloudflare safely: scan first, show the plan, then write only when the owner approves.
 
 It works three ways:
 
-- **CLI**: run `zonemend` locally with a scoped Cloudflare token.
+- **CLI**: run `cfops` locally with a scoped Cloudflare token.
 - **Library**: import the zero-dependency engine into your own app.
 - **Remote MCP Worker**: deploy the included Worker with Wrangler so Claude, Codex, Cursor, or another MCP client can call Cloudflare DNS tools through a locked endpoint.
 
-ZoneMender is especially useful for Cloudflare operators who need repeatable DNS hygiene across many zones: SPF cleanup, DMARC enforcement, BIMI records, MX checks, DKIM discovery, Cloudflare Email Routing, TXT verification records, safe DNS upserts, and audit logs for every approved write.
+Cloudflare Ops MCP is especially useful for Cloudflare operators who need repeatable DNS hygiene across many zones: SPF cleanup, DMARC enforcement, BIMI records, MX checks, DKIM discovery, Cloudflare Email Routing, TXT verification records, safe DNS upserts, and audit logs for every approved write.
 
-> **Unofficial Cloudflare tool.** ZoneMender is made by **AMH - Artificial Mind Hive**, operated by **Service Pricer LLC**. It is independent, third-party, open-source software. It is **not affiliated with, endorsed by, sponsored by, or made by Cloudflare, Inc.** "Cloudflare" and "Wrangler" are referenced only to describe compatibility with Cloudflare's platform and official developer tooling. You are responsible for every DNS, Email Routing, DMARC, BIMI, SPF, or Worker change you approve and apply.
+> **Unofficial Cloudflare tool.** Cloudflare Ops MCP is made by **AMH - Artificial Mind Hive**, operated by **Service Pricer LLC**. It is independent, third-party, open-source software. It is **not affiliated with, endorsed by, sponsored by, or made by Cloudflare, Inc.** "Cloudflare" and "Wrangler" are referenced only to describe compatibility with Cloudflare's platform and official developer tooling. You are responsible for every DNS, Email Routing, DMARC, BIMI, SPF, or Worker change you approve and apply.
 
 ---
 
-## What ZoneMender handles
+## What Cloudflare Ops MCP handles
 
-ZoneMender is focused on the Cloudflare zone tasks that regularly break launches, email trust, brand display, and AI-agent workflows:
+Cloudflare Ops MCP is focused on the Cloudflare tasks that regularly break launches, email trust, bot checks, cache freshness, brand display, and AI-agent workflows:
 
 - DNS record scan, lookup, create, update, no-op detection, and guarded delete.
 - SPF detection and planning so you do not accidentally create multiple SPF records.
@@ -28,10 +28,12 @@ ZoneMender is focused on the Cloudflare zone tasks that regularly break launches
 - MX and Cloudflare Email Routing checks.
 - Email Routing destination/rule setup with verified-destination protection.
 - Audit logs for applied changes.
+- Cloudflare Pages DNS cutovers and cache purge operations.
+- Turnstile widget planning/creation for bot checks.
 - MCP endpoint deployment on Cloudflare Workers with Wrangler secrets.
 - AI-agent safety defaults: dry-run first, diff display, no token in tool args, no accidental deletes.
 
-This is not meant to replace every Cloudflare feature. It is the narrow, safe lane for the zone/email-auth work an operator or AI agent should be allowed to do.
+This is not meant to replace every Cloudflare feature. It is the narrow, safe lane for common Cloudflare ops an operator or AI agent should be allowed to do.
 
 ## Examples are operator recipes
 
@@ -44,13 +46,13 @@ Use this when an old registrar, parking page, Vercel app, HugeDomains page, or s
 Dry-run first:
 
 ```sh
-zonemend pages example.com --target project.pages.dev
+cfops pages example.com --target project.pages.dev
 ```
 
 Apply only after reviewing the delete/create plan:
 
 ```sh
-zonemend pages example.com --target project.pages.dev --apply
+cfops pages example.com --target project.pages.dev --apply
 ```
 
 What it changes:
@@ -69,7 +71,7 @@ Options:
 
 ## Why build this with Wrangler?
 
-Wrangler is Cloudflare's official developer CLI. ZoneMender can run without Wrangler as a local CLI/library, but Wrangler is the right path when you want a remote MCP server because it deploys the Worker, stores secrets, tails logs, and manages Cloudflare bindings from the same toolchain Cloudflare documents.
+Wrangler is Cloudflare's official developer CLI. Cloudflare Ops MCP can run without Wrangler as a local CLI/library, but Wrangler is the right path when you want a remote MCP server because it deploys the Worker, stores secrets, tails logs, and manages Cloudflare bindings from the same toolchain Cloudflare documents.
 
 Use Wrangler when you want:
 
@@ -90,7 +92,7 @@ Use the plain CLI when you only need one local terminal to scan or fix a zone.
 
 **Agent-safe Cloudflare writes**
 
-ZoneMender keeps the write path narrow: scan the zone, show the diff, wait for explicit approval, then apply only the requested DNS, DMARC, BIMI, SPF, or Email Routing change.
+Cloudflare Ops MCP keeps the write path narrow: scan the target, show the diff, wait for explicit approval, then apply only the requested DNS, DMARC, BIMI, SPF, Email Routing, Pages, cache, or Turnstile change.
 
 </td>
 </tr>
@@ -150,7 +152,7 @@ The scanner reports SPF, DKIM discovery, DMARC policy, BIMI readiness, MX record
    honored below enforcement) unless you pass `{ force: true }`. In dry-run it
    warns.
 7. **Audit log.** Every apply appends one JSON line to an audit log
-   (default `./zonemender-audit.log`) with
+   (default `./cloudflare-ops-mcp-audit.log`) with
    `{ ts, action, domain, record, before, after }` - never the token.
 
 ---
@@ -162,9 +164,9 @@ For the fastest path, start with [SETUP.md](SETUP.md). It explains the CLI path,
 ## Install
 
 ```sh
-npm install zonemender
+npm install cloudflare-ops-mcp
 # or run the CLI without installing:
-npx zonemender scan example.com
+npx cloudflare-ops-mcp scan example.com
 ```
 
 Requires **Node.js >= 18** (for the built-in global `fetch`). No other
@@ -204,14 +206,35 @@ cp .env.example .env
 # then load it however you prefer (e.g. `set -a; . ./.env; set +a`)
 ```
 
-`zonemender` reads `CLOUDFLARE_API_TOKEN` from the environment only.
+`cloudflare-ops-mcp` reads `CLOUDFLARE_API_TOKEN` from the environment only.
 
+### OAuth connector path - no forever mega token
+
+For a hosted app, use Cloudflare OAuth instead of a shared permanent API token. Git ships the OAuth connector, but each deployment stores its own OAuth client ID/secret as Worker secrets and each user connects Cloudflare through consent.
+
+```sh
+npm run oauth:setup -- https://<your-worker-host>
+cd worker
+npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_ID
+npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_SECRET
+npx wrangler secret put CLOUDFLARE_OAUTH_REDIRECT_URI
+npx wrangler deploy
+```
+
+Then send the user to:
+
+```txt
+https://<your-worker-host>/oauth/cloudflare/start?tenant=<user-or-account-id>
+```
+
+MCP tools can receive `{ "tenant": "<user-or-account-id>" }`. The Worker uses that tenant's OAuth token server-side and never exposes it to the agent. See [OAUTH.md](OAUTH.md).
 ### Public-use credential model
 
-ZoneMender does **not** ship with an API key, shared account, hosted proxy token, or any hidden credentials. Every operator must bring one of these:
+Cloudflare Ops MCP does **not** ship with an API key, shared account, hosted proxy token, or any hidden credentials. Every operator must bring one of these:
 
 - a scoped Cloudflare API token in their own environment for local CLI/library use;
 - a scoped Cloudflare API token stored as their own Worker secret for self-hosted MCP use;
+- a per-user Cloudflare OAuth connection stored server-side by the Worker for hosted app use;
 - an OAuth/token-vault integration built by their own host app, with approval gates before writes.
 
 Do not ask users to send tokens through chat, issues, logs, or screenshots. If a token is exposed, rotate it in Cloudflare and create a new scoped token.
@@ -221,7 +244,7 @@ Do not ask users to send tokens through chat, issues, logs, or screenshots. If a
 ## CLI usage
 
 ```
-zonemend <command> <domain> [options]
+cfops <command> <domain> [options]
 ```
 
 | Command | What it does |
@@ -253,7 +276,7 @@ Assume a scoped token is exported and each domain is a zone in your account.
 First, dry-run (writes nothing - shows the diff):
 
 ```sh
-zonemend bimi example.com --logo https://example.com/bimi/logo.svg
+cfops bimi example.com --logo https://example.com/bimi/logo.svg
 ```
 
 ```
@@ -271,7 +294,7 @@ Dry-run only. Re-run with --apply to write this change.
 Then apply:
 
 ```sh
-zonemend bimi example.com --logo https://example.com/bimi/logo.svg --apply
+cfops bimi example.com --logo https://example.com/bimi/logo.svg --apply
 ```
 
 > If `example.com`'s DMARC were still at `p=none`, the apply would be **blocked**
@@ -283,13 +306,13 @@ zonemend bimi example.com --logo https://example.com/bimi/logo.svg --apply
 Dry-run:
 
 ```sh
-zonemend bimi example.org --logo https://example.org/bimi/logo.svg
+cfops bimi example.org --logo https://example.org/bimi/logo.svg
 ```
 
 Apply once the diff looks right:
 
 ```sh
-zonemend bimi example.org --logo https://example.org/bimi/logo.svg --apply
+cfops bimi example.org --logo https://example.org/bimi/logo.svg --apply
 ```
 
 (For broad display in Gmail/Apple Mail, host a VMC/CMC and add
@@ -300,7 +323,7 @@ zonemend bimi example.org --logo https://example.org/bimi/logo.svg --apply
 Dry-run first - note it changes **only** `p`, preserving your existing `rua`:
 
 ```sh
-zonemend dmarc example.org --policy quarantine --rua mailto:dmarc@example.org --pct 25
+cfops dmarc example.org --policy quarantine --rua mailto:dmarc@example.org --pct 25
 ```
 
 ```
@@ -318,7 +341,7 @@ Dry-run only. Re-run with --apply to write this change.
 Then apply:
 
 ```sh
-zonemend dmarc example.org --policy quarantine --rua mailto:dmarc@example.org --pct 25 --apply
+cfops dmarc example.org --policy quarantine --rua mailto:dmarc@example.org --pct 25 --apply
 ```
 
 > **Ramp safely.** Only flip to `quarantine` after `p=none` + `rua` reports show
@@ -331,7 +354,7 @@ zonemend dmarc example.org --policy quarantine --rua mailto:dmarc@example.org --
 
 ## Library usage (host apps)
 
-`zonemender` exposes clean named exports so a host app can import and wrap it
+`cloudflare-ops-mcp` exposes clean named exports so a host app can import and wrap it
 (add your own auth, approval UI, or multi-tenant token vault) - but it has
 **no dependency on any host** and runs perfectly standalone.
 
@@ -345,7 +368,7 @@ import {
   setupEmailRouting,
   planEmailAuth,
   appendAudit,
-} from "zonemender";
+} from "cloudflare-ops-mcp";
 
 const client = new CloudflareClient(); // reads CLOUDFLARE_API_TOKEN from env
 // (you may also inject { token, fetch } - useful for tests)
@@ -367,7 +390,7 @@ const applied = await setDmarcPolicy(
   { rua: "mailto:dmarc@example.com", pct: 25 },
   { apply: true }
 );
-appendAudit("./zonemender-audit.log", {
+appendAudit("./cloudflare-ops-mcp-audit.log", {
   ts: new Date().toISOString(),
   action: "dmarc.policy",
   domain: "example.com",
@@ -397,7 +420,7 @@ logic never calls `Date.now()` - you (or the CLI) supply audit timestamps.
 
 ## Embedding in a platform
 
-`zonemender` is a generic, open tool. A larger platform can `import` it to
+`cloudflare-ops-mcp` is a generic, open tool. A larger platform can `import` it to
 automate zone hygiene for its users (wrapping it with per-account tokens and an
 approval step), but it is completely standalone - the library and CLI run on
 their own with nothing but a scoped Cloudflare token.
@@ -425,7 +448,7 @@ Three deliberate hardening choices:
 ```sh
 npm run worker:generate-key                 # creates a strong MCP_ACCESS_KEY
 cd worker
-npx wrangler secret put CLOUDFLARE_API_TOKEN   # the scoped CF token the tools use
+npx wrangler secret put CLOUDFLARE_API_TOKEN   # optional fallback scoped CF token; OAuth is preferred for hosted user apps
 npx wrangler secret put MCP_ACCESS_KEY         # paste generated zm_ key
 npx wrangler deploy
 ```
@@ -451,7 +474,7 @@ Made by AMH - Artificial Mind Hive, operated by Service Pricer LLC.
 ## Contact / company
 
 - Service Pricer: https://servicepricer.app
-- GitHub: https://github.com/pain2hustle/zonemender
+- GitHub: https://github.com/pain2hustle/cloudflare-ops-mcp
 
 ## License
 

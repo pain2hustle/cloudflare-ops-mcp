@@ -162,7 +162,7 @@ export async function setupBimi(client, domain, arg = {}, opts = {}) {
   const plan = await applyDnsRecord(
     client,
     domain,
-    { type: "TXT", name, content, comment: "BIMI record (zonemender)" },
+    { type: "TXT", name, content, comment: "BIMI record (cloudflare-ops-mcp)" },
     { apply, zoneId: zone_id, records }
   );
 

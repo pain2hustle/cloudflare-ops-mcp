@@ -2,7 +2,7 @@
 
 ## Credential handling
 
-ZoneMender is designed for bring-your-own Cloudflare credentials.
+Cloudflare Ops MCP is designed for bring-your-own Cloudflare credentials.
 
 - Do not commit real Cloudflare API tokens, Global API Keys, MCP access keys, `.env` files, `.dev.vars` files, Wrangler output, or audit logs.
 - Do not paste tokens into GitHub issues, chat logs, screenshots, or support requests.
