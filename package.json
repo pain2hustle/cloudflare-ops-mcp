@@ -1,6 +1,6 @@
 {
     "name":  "cloudflare-ops-mcp",
-    "version":  "0.1.0",
+    "version":  "0.2.0",
     "description":  "Unofficial Cloudflare Ops MCP server and CLI for AI agents: DNS, Email Routing, DMARC, SPF, BIMI, Pages cutovers, cache purge, Turnstile, Wrangler, and approval-gated fixes.",
     "type":  "module",
     "main":  "src/index.js",

@@ -48,3 +48,13 @@ export { planPagesCutover } from "./pages.js";
 export { createTurnstileWidget } from "./turnstile.js";
 
 export { appendAudit, AUDIT_DEFAULT_PATH } from "./audit.js";
+
+export {
+  mintScopedToken,
+  listTokens,
+  revokeToken,
+  listPermissionGroups,
+  TOKEN_PRESETS,
+} from "./tokens.js";
+
+export { whoServesDomain, accountDoctor, pagesBranchCheck } from "./doctor.js";

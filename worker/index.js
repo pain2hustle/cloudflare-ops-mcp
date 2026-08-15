@@ -25,12 +25,14 @@ import { planEmailAuth } from "../src/plan.js";
 import { purgeCache } from "../src/cache.js";
 import { planPagesCutover } from "../src/pages.js";
 import { createTurnstileWidget } from "../src/turnstile.js";
+import { mintScopedToken, listTokens, revokeToken, TOKEN_PRESETS } from "../src/tokens.js";
+import { whoServesDomain, accountDoctor, pagesBranchCheck } from "../src/doctor.js";
 import { getOAuthAccessToken, getOAuthConfigStatus, handleOAuthCallback, handleOAuthStart, handleOAuthStatus } from "./oauth.js";
 
 const SERVER = {
   name: "cloudflare-ops-mcp",
   title: "Cloudflare Ops MCP (DNS, Email, Pages, Cache, Turnstile)",
-  version: "0.1.0",
+  version: "0.2.0",
 };
 const PROTOCOL_FALLBACK = "2025-06-18";
 
@@ -198,6 +200,78 @@ const TOOLS = [
       required: ["domain"],
     },
   },
+  {
+    name: "mint_scoped_token",
+    description:
+      "Mint a narrow, auto-expiring Cloudflare API token for ONE zone (presets: zone-read, dns-zone, cache-purge; default 1h TTL). The vending machine for least-privilege agent work: hand a cheap agent a key that can't hurt anything and dies on its own. DRY-RUN by default — returns the exact policy JSON; mints nothing unless apply=true. Needs a bootstrap token with 'API Tokens Write'. There is deliberately NO super/account-wide preset.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        domain: { type: "string", description: "Zone the token is confined to, e.g. example.com" },
+        preset: { type: "string", enum: ["zone-read", "dns-zone", "cache-purge"], description: "Permission preset. Default dns-zone." },
+        extra_groups: { type: "array", items: { type: "string" }, description: "Additional Cloudflare permission-group NAMES (still zone-scoped)." },
+        ttl_seconds: { type: "number", description: "Lifetime in seconds. Default 3600; capped at 86400 unless confirm_long=true." },
+        confirm_long: { type: "boolean", description: "Required to exceed the 24h TTL cap." },
+        name: { type: "string", description: "Optional token label for the CF dashboard." },
+        apply: { type: "boolean", description: "Default false = dry-run." },
+      },
+      required: ["domain"],
+    },
+  },
+  {
+    name: "list_tokens",
+    description:
+      "List API tokens on the connected user: id, name, status, expiry, and whether cfops minted them. NEVER returns token values (Cloudflare only shows those once, at mint). Read-only.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "revoke_token",
+    description:
+      "Revoke an API token by id (e.g. a minted task-token you're done with early). DRY-RUN by default; deletes nothing unless apply=true.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        token_id: { type: "string", description: "Token id from list_tokens." },
+        apply: { type: "boolean", description: "Default false = dry-run." },
+      },
+      required: ["token_id"],
+    },
+  },
+  {
+    name: "who_serves_domain",
+    description:
+      "Answer 'what is ACTUALLY serving this domain?': zone → Worker routes, Worker custom domains, and Pages projects that claim it, with a warning when multiple products fight over it. Read-only.",
+    inputSchema: {
+      type: "object",
+      properties: { domain: { type: "string", description: "Hostname or zone, e.g. app.example.com" } },
+      required: ["domain"],
+    },
+  },
+  {
+    name: "account_doctor",
+    description:
+      "Diagnose the token/account situation: accounts visible to this token, whether the expected account is among them (wrong-token detection), and SAME-NAME Pages projects across accounts — the decoy that silently eats deploys. Read-only.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        expected_account_id: { type: "string", description: "Account id deploys are SUPPOSED to target." },
+      },
+    },
+  },
+  {
+    name: "pages_branch_check",
+    description:
+      "Compare a Pages project's production branch against the branch you're about to deploy — catches the silent 'git says master, project says main, every deploy lands on a preview' failure. Read-only.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        account_id: { type: "string", description: "Account that owns the Pages project." },
+        project: { type: "string", description: "Pages project name." },
+        git_branch: { type: "string", description: "Branch you intend to deploy; enables the match/mismatch verdict." },
+      },
+      required: ["account_id", "project"],
+    },
+  },
 ];
 
 // ── Tool implementations (each returns a plain object; serialized as text) ──
@@ -212,9 +286,41 @@ async function runTool(name, args, env) {
   }
   const client = new CloudflareClient({ token });
   const domain = String(args.domain || "").trim();
-  if (!domain) return { error: "domain is required" };
+  // Account-level tools have no zone; everything else still requires one.
+  const DOMAINLESS = new Set(["list_tokens", "revoke_token", "account_doctor", "pages_branch_check"]);
+  if (!domain && !DOMAINLESS.has(name)) return { error: "domain is required" };
 
   switch (name) {
+    case "mint_scoped_token":
+      return await mintScopedToken(client, {
+        domain,
+        preset: args.preset || "dns-zone",
+        extra_groups: Array.isArray(args.extra_groups) ? args.extra_groups : [],
+        ttl_seconds: args.ttl_seconds,
+        confirm_long: args.confirm_long === true,
+        name: args.name,
+        apply: args.apply === true,
+      });
+
+    case "list_tokens":
+      return { tokens: await listTokens(client), presets: Object.keys(TOKEN_PRESETS) };
+
+    case "revoke_token":
+      return await revokeToken(client, String(args.token_id || "").trim(), { apply: args.apply === true });
+
+    case "who_serves_domain":
+      return await whoServesDomain(client, domain);
+
+    case "account_doctor":
+      return await accountDoctor(client, { expected_account_id: args.expected_account_id });
+
+    case "pages_branch_check":
+      return await pagesBranchCheck(client, {
+        account_id: args.account_id,
+        project: args.project,
+        git_branch: args.git_branch,
+      });
+
     case "scan_zone":
       return await scanZone(client, domain);
 

@@ -3,7 +3,7 @@
     "name":  "io.github.pain2hustle/cloudflare-ops-mcp",
     "title":  "Cloudflare Ops MCP - DNS, Email, Pages, Cache, Turnstile",
     "description":  "Unofficial Cloudflare Ops MCP server with approval-gated DNS, Email Routing, DMARC/SPF/BIMI, Pages cutover, cache purge, and Turnstile tools.",
-    "version":  "0.1.0",
+    "version":  "0.2.0",
     "repository":  {
                        "url":  "https://github.com/pain2hustle/cloudflare-ops-mcp",
                        "source":  "github"
@@ -32,7 +32,7 @@
                      {
                          "registryType":  "npm",
                          "identifier":  "cloudflare-ops-mcp",
-                         "version":  "0.1.0",
+                         "version":  "0.2.0",
                          "transport":  {
                                            "type":  "stdio"
                                        },

@@ -241,6 +241,36 @@ Do not ask users to send tokens through chat, issues, logs, or screenshots. If a
 
 ---
 
+## The token vending machine (mint down, never up)
+
+Wrangler *consumes* tokens. The official Cloudflare MCP *consumes* tokens. Nothing in the toolchain *manufactures* least-privilege tokens on demand — so everyone ends up doing agent work with one big long-lived key. This is the gap `mint_scoped_token` closes:
+
+1. **You hold one bootstrap token** (needs `User > API Tokens > Edit`). It stays a Worker secret or env var — it never travels through a chat or an agent transcript.
+2. **An agent asks for a task token**: `mint_scoped_token { domain: "example.com", preset: "dns-zone", ttl_seconds: 3600 }`. Dry-run first, like every mutating tool here — you see the exact policy JSON before anything is created.
+3. **The minted token is confined to ONE zone, with preset permissions, and auto-expires** (default 1 hour, hard-capped at 24 h unless `confirm_long=true`). Presets: `zone-read`, `dns-zone`, `cache-purge`. There is deliberately **no super or account-wide preset** — mint down, never up.
+4. **Hand it to whatever does the work** — a cheaper model, a cron job, even Wrangler itself (`CLOUDFLARE_API_TOKEN=<minted> wrangler ...`). When it leaks or lingers, it's a key to one zone's DNS that dies within the hour.
+5. `list_tokens` shows what's outstanding (never values), `revoke_token` kills one early.
+
+### Orchestrator + cheap-agent pattern
+
+This is the flow the vending machine is built for: a strong orchestrator model plans, a cheap model executes.
+
+- The orchestrator (Claude, or your pick) decides *what* needs doing and calls `mint_scoped_token` for exactly that scope.
+- A cheap tool-calling model (Kimi K2, Groq-hosted Llama, anything OpenAI-compatible) gets the minted token + the MCP endpoint and grinds the routine work — DNS fixes, DMARC rollouts, cache busts — through the same dry-run-gated tools.
+- Every mutating call still requires `apply: true`, so the cheap agent's mistakes surface as diffs, not damage.
+
+MCP is model-agnostic by design: any MCP client can point at the hosted Worker endpoint, and any tool-calling LLM can drive that client.
+
+## Doctor tools (the questions Cloudflare makes you assemble by hand)
+
+Read-only diagnostics for the failure modes that actually burn multi-account operators:
+
+- **`who_serves_domain`** — domain → zone → Worker routes, Worker custom domains, and Pages projects that claim it, with a warning when several products fight over one hostname. Answers "what is ACTUALLY serving this URL?" without four dashboard tabs.
+- **`account_doctor`** — which accounts this token can see, whether the account you *meant* is among them (wrong-token detection), and same-name Pages projects across accounts — the decoy that lets a deploy "succeed" into the wrong account while production never changes.
+- **`pages_branch_check`** — the project's production branch vs the branch you're about to deploy. Catches the silent "git says `master`, project says `main`, every deploy lands on a preview" failure before it eats an afternoon.
+
+---
+
 ## CLI usage
 
 ```
