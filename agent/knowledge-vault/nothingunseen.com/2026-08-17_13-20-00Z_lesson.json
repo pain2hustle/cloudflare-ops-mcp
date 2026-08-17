@@ -1,0 +1,57 @@
+{
+  "schema_version": "amh.wt.knowledge.v1",
+  "kind": "lesson",
+  "exported_at": "2026-08-17T13:20:00Z",
+  "site": "nothingunseen.com",
+  "source": "master session 2026-08-17 — NU software article publish",
+  "taught_by": "master",
+  "lessons": [
+    {
+      "id": "pages-branch-preview-trap",
+      "title": "A Cloudflare Pages deploy from a non-production branch silently becomes a preview",
+      "problem": "Deploying with `wrangler pages deploy` inherits the local git branch name. If the Pages project's production branch is `main` and the repo is on `master`, the deploy succeeds — as a preview. Production keeps serving the old build while every success message looks normal.",
+      "method": [
+        "Before deploying, compare the local branch to the Pages project's production branch (project settings or latest_deployment.deployment_trigger.metadata.branch).",
+        "Pass `--branch <production-branch>` explicitly when they differ.",
+        "After deploy, verify the APEX domain — not the per-deploy preview URL — serves the new content."
+      ],
+      "signals_it_applies": [
+        "Deploy output shows an alias URL named after a branch that is not the production branch",
+        "The preview URL has the change but the custom domain does not"
+      ],
+      "hard_nos": [
+        "Do not conclude propagation delay before checking which branch the deploy landed on"
+      ],
+      "evidence": "nothingunseen.com 2026-08-17: repo on master, production on main; first deploy aliased master.nothingunseen.pages.dev and apex stayed stale; redeploy with --branch main fixed it."
+    },
+    {
+      "id": "spa-fallback-200-fakeout",
+      "title": "HTTP 200 on a Pages site proves nothing — SPA fallback answers 200 for missing pages",
+      "problem": "Cloudflare Pages serves the fallback document for unknown paths with status 200, so a new page can look live while production is actually serving the homepage shell.",
+      "method": [
+        "Verify by matching a distinctive string from the new page's body, never by status code.",
+        "Pair the content check with one functional check that exercises the new code path (e.g. the search API returning the new entry)."
+      ],
+      "hard_nos": [
+        "Do not report a page as live from a 200 alone",
+        "Do not skip the content match because the deploy command succeeded"
+      ],
+      "evidence": "nothingunseen.com 2026-08-17: /a/nu-cloudflare-ops-mcp-agent-harness returned 200 while production served the fallback; content-match check exposed it before it was reported as done."
+    },
+    {
+      "id": "publish-wiring-checklist",
+      "title": "A published article is page + index + sitemap + llms.txt + ping, not just an HTML file",
+      "problem": "Dropping an HTML file on a site does not make it findable by search engines, site search, or AI crawlers.",
+      "method": [
+        "Follow the site's own house template exactly (styles, disclosure footer, Reading Room link).",
+        "Register the piece in the site's search index with title, excerpt, tags, and image.",
+        "Add the URL to sitemap.xml and describe the subject in llms.txt for AI crawlers.",
+        "Add JSON-LD appropriate to the content (SoftwareApplication for a tool, NewsArticle for the piece).",
+        "Submit via IndexNow after the production deploy is verified, not before.",
+        "Disclose shared ownership when the site covers its own publisher's product."
+      ],
+      "evidence": "nothingunseen.com 2026-08-17: article ranked first in NU search for its target query after full wiring; IndexNow accepted 191 URLs."
+    }
+  ],
+  "note": "Redacted lesson entry. No OAuth records, connector keys, secret values, raw source bodies, client IPs, or cookies."
+}
