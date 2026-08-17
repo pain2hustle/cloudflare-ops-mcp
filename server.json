@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.pain2hustle/cloudflare-ops-mcp",
   "title": "AMH Cloudflare Ops MCP by WT",
-  "description": "The bridge from K2 agents through Wrangler to your master AI: bounded delegation, independent verification, SafeTry security auditing, and approval-gated Cloudflare operations (DNS, DMARC/SPF/BIMI, Email Routing, Pages, cache, Turnstile).",
+  "description": "The bridge from K2 agents through Wrangler to your master AI - safe, approval-gated Cloudflare ops.",
   "version": "0.4.0",
   "repository": {
     "url": "https://github.com/pain2hustle/cloudflare-ops-mcp",
@@ -17,25 +17,6 @@
           "name": "Authorization",
           "description": "Your one-user cfops_ connector key, issued after Cloudflare OAuth. This is not a Cloudflare API token.",
           "isRequired": true,
-          "isSecret": true
-        }
-      ]
-    }
-  ],
-  "packages": [
-    {
-      "registryType": "npm",
-      "identifier": "cloudflare-ops-mcp",
-      "version": "0.4.0",
-      "transport": {
-        "type": "stdio"
-      },
-      "environmentVariables": [
-        {
-          "name": "CLOUDFLARE_API_TOKEN",
-          "description": "Scoped Cloudflare API token with only the permissions needed for the tools you use, such as Zone Read, DNS Edit, Email Routing Rules Edit, Cache Purge, and Turnstile Edit. Never use a Global API Key.",
-          "isRequired": true,
-          "format": "string",
           "isSecret": true
         }
       ]
