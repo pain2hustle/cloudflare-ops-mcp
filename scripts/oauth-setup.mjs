@@ -20,5 +20,6 @@ console.log(`   npx wrangler secret put CLOUDFLARE_OAUTH_REDIRECT_URI`);
 console.log(`   npx wrangler secret put CLOUDFLARE_OAUTH_SCOPES   # optional override`);
 console.log(`   npx wrangler deploy\n`);
 console.log(`5. Connect a tenant/user:`);
-console.log(`   ${origin}/oauth/cloudflare/start?tenant=default`);
+console.log(`   ${origin}/oauth/cloudflare/start`);
+console.log(`\n5. MCP clients use:\n   ${origin}/mcp`);
 console.log(`\nNo permanent mega token is needed. Users can revoke the OAuth client in Cloudflare.`);

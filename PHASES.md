@@ -22,7 +22,7 @@ Status: live in the repo.
 A user deploys the included Worker to their own Cloudflare account with Wrangler.
 
 - `CLOUDFLARE_API_TOKEN` is stored as that user's Worker secret.
-- `MCP_ACCESS_KEY` locks the MCP endpoint.
+- Public users authenticate with isolated `cfops_` connector keys created after OAuth. `MCP_ACCESS_KEY` is an optional private-owner fallback.
 - Agents call tools over MCP without ever seeing the Cloudflare token.
 - Mutating tools still require `apply: true` after the owner reviews the diff.
 

@@ -1,39 +1,24 @@
 # Cloudflare Ops MCP Setup
 
-Cloudflare Ops MCP is meant to make Cloudflare operations safe and reviewable:
+Choose the lane that fits you:
 
-1. Scan first.
-2. See the exact planned change.
-3. Approve only what you understand.
-4. Apply the DNS change only after review.
+1. **Public hosted OAuth:** connect your own Cloudflare account and use a one-user connector key. No owner API token is shared.
+2. **Local CLI:** create your own least-privilege Cloudflare API token and keep it in your terminal environment.
+3. **Self-hosted Worker:** clone the repo, create your own OAuth app, and deploy through Wrangler.
 
-Cloudflare Ops MCP is a standalone open-source tool. It does not include anyone's Cloudflare API keys, account credentials, hosted proxy token, or private connector. Each user brings their own Cloudflare authorization. See [PHASES.md](PHASES.md) for the public rollout path from local CLI to hosted OAuth connector.
+## Fastest: public hosted OAuth
 
-## Authorization paths
+Open [https://cfops.nothingunseen.com/oauth/cloudflare/start](https://cfops.nothingunseen.com/oauth/cloudflare/start), approve Cloudflare consent, and copy the one-time MCP configuration. Point your client to:
 
-A user needs one of these authorization paths:
+```txt
+https://cfops.nothingunseen.com/mcp
+```
 
-1. **Local CLI path.** Create a least-privilege Cloudflare API token and export it as `CLOUDFLARE_API_TOKEN` in your own terminal.
-2. **Self-hosted MCP path.** Deploy the included Worker to your own Cloudflare account and store your own `CLOUDFLARE_API_TOKEN` and `MCP_ACCESS_KEY` as Worker secrets.
-3. **Host-app path.** If a separate product embeds Cloudflare Ops MCP, that product must implement its own OAuth/token vault and approval flow. Cloudflare Ops MCP itself does not provide shared hosted credentials.
+The returned `cfops_` connector key is not a Cloudflare API token. Keep it private and out of Git. See [OAUTH.md](OAUTH.md) for Claude/Cursor/Codex examples, status, and revoke commands.
 
-Cloudflare Ops MCP can generate the **MCP access key** that protects the Worker endpoint. It cannot create a user's Cloudflare API token without Cloudflare approval. That ownership proof has to come from Cloudflare OAuth or the Cloudflare dashboard.
+## Local CLI
 
-## Cloudflare token permissions
-
-Use a scoped Cloudflare API token. Never use your Global API Key.
-
-Minimum permissions for the common DNS/email-auth tools:
-
-- Zone / Zone / Read
-- Zone / DNS / Edit
-- Zone / Email Routing Rules / Edit
-
-Best practice: limit the token to the exact zones the operator should manage.
-
-## Fast local CLI
-
-Use this when you are fixing your own domain from your terminal.
+Use a scoped token, never a Global API Key. Common DNS/email permissions are Zone Read, DNS Edit, and Email Routing Rules Edit. Limit the token to the exact zones you manage.
 
 ```sh
 export CLOUDFLARE_API_TOKEN=your_scoped_token
@@ -43,59 +28,46 @@ npx cloudflare-ops-mcp dmarc example.com --policy quarantine --pct 100
 npx cloudflare-ops-mcp dmarc example.com --policy quarantine --pct 100 --apply
 ```
 
-Dry-run is the default. The write only happens when you add `--apply`.
+Dry-run is the default. A write occurs only with `--apply`.
 
-## Hosted MCP with Wrangler
-
-Use this when you want an MCP-compatible agent or editor to call Cloudflare Ops MCP as a remote tool while keeping the Cloudflare API token in your own Worker secrets.
+## Self-hosted OAuth Worker
 
 ```sh
 git clone https://github.com/pain2hustle/cloudflare-ops-mcp.git
 cd cloudflare-ops-mcp
 npm install
-npm run worker:generate-key
-npm run worker:set-token
-npm run worker:set-key
-npm run worker:deploy
+npm test
+npm run oauth:setup -- https://your-worker-host
+cd worker
+npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_ID
+npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_SECRET
+npx wrangler secret put CLOUDFLARE_OAUTH_REDIRECT_URI
+npx wrangler deploy
 ```
 
-Then connect your MCP client to the deployed Worker URL and send the access key in a header:
+Configure the Cloudflare OAuth callback as:
 
-```http
-Authorization: Bearer <MCP_ACCESS_KEY>
+```txt
+https://your-worker-host/oauth/cloudflare/callback
 ```
 
-## Worker secrets
+The Worker uses the `CLOUDFLARE_OPS_OAUTH` KV binding in `worker/wrangler.jsonc`. Replace the namespace ID when deploying under another Cloudflare account.
 
-Store real secrets only with Wrangler, never in git:
+Optional private-owner compatibility secrets:
 
 ```sh
-cd worker
-npx wrangler secret put CLOUDFLARE_API_TOKEN
 npx wrangler secret put MCP_ACCESS_KEY
+npx wrangler secret put CLOUDFLARE_API_TOKEN
 ```
 
-The example files contain placeholders only. `.env`, `.env.local`, `.dev.vars`, `worker/.dev.vars`, logs, and Wrangler output are ignored by git.
+Do not distribute that admin key. Public users should connect through OAuth.
 
-## Approval workflow
+## Safe operating flow
 
-A safe operator flow is:
+1. Call a scan, plan, doctor, or verification tool.
+2. Read the exact planned diff.
+3. Get the account owner's approval.
+4. Repeat the call with `apply: true` only for that change.
+5. Verify the result.
 
-1. Run `scan` or `plan` first.
-2. Read the diff.
-3. Apply only the exact command you approved with `--apply`.
-4. Keep the audit log for the applied change.
-
-For hosted MCP use, keep the same rule: the agent should call read-only tools first, show the diff, then call mutating tools only when the owner approves.
-
-## Why this is easier than raw Wrangler
-
-Wrangler is the official Cloudflare developer CLI. It is powerful, but it does not know your intent. Cloudflare Ops MCP adds intent:
-
-- "check my email auth" -> scans SPF, DMARC, DKIM, MX, BIMI, Email Routing.
-- "fix dmarc" -> changes only the DMARC policy tag.
-- "add bimi" -> refuses if DMARC is still `p=none`.
-- "apply" -> writes only after a dry-run diff.
-- "delete" -> blocked unless explicitly confirmed.
-
-Wrangler still handles deployment, secrets, and logs. Cloudflare Ops MCP handles safe Cloudflare DNS, email, Pages, cache, and Turnstile workflows.
+Wrangler manages deployment, KV, secrets, and logs. Cloudflare Ops MCP adds the intent-aware checks, diffs, and approval gates.

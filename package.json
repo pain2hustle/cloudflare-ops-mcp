@@ -1,7 +1,7 @@
 {
     "name":  "cloudflare-ops-mcp",
-    "version":  "0.2.0",
-    "description":  "Unofficial Cloudflare Ops MCP server and CLI for AI agents: DNS, Email Routing, DMARC, SPF, BIMI, Pages cutovers, cache purge, Turnstile, Wrangler, and approval-gated fixes.",
+    "version":  "0.3.0",
+    "description":  "-/\\-\\ M H // WT — OAuth-first Cloudflare Ops MCP with isolated per-user connections, DNS, Email Routing, DMARC, BIMI, Pages, cache, Turnstile, and dry-run fixes.",
     "type":  "module",
     "main":  "src/index.js",
     "exports":  {
@@ -63,7 +63,7 @@
                        "type":  "git",
                        "url":  "git+https://github.com/pain2hustle/cloudflare-ops-mcp.git"
                    },
-    "homepage":  "https://github.com/pain2hustle/cloudflare-ops-mcp",
+    "homepage":  "https://cfops.nothingunseen.com",
     "bugs":  {
                  "url":  "https://github.com/pain2hustle/cloudflare-ops-mcp/issues"
              },
@@ -72,6 +72,7 @@
                   "bin",
                   "worker/index.js",
                   "worker/oauth.js",
+                  "assets/wt-walrus.png",
                   "worker/wrangler.jsonc",
                   "README.md",
                   "MCP.md",

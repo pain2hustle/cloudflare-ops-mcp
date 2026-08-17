@@ -1,37 +1,113 @@
 # Cloudflare OAuth Connector
 
-This is the no-mega-token path.
+<p align="center"><code>-/\-\ M H // WT · YOUR CLOUDFLARE STAYS YOURS</code></p>
 
-The Git repo can safely ship the OAuth routes, setup helper, KV binding shape, and MCP tools. It must not ship a permanent Cloudflare API token, OAuth client secret, user access token, refresh token, or account-wide admin credential.
+Version 0.3.0 is the public, per-user OAuth lane. A user authorizes Cloudflare directly and receives a one-time `cfops_` connector key. The user never receives the service owner's Cloudflare API token, and the service never puts a user's Cloudflare token in Git, MCP arguments, chat, or status responses.
 
-## What Git can include
+## Use the hosted connector
 
-- `worker/oauth.js`: OAuth start/callback/status routes.
-- `worker/wrangler.jsonc`: the `CLOUDFLARE_OPS_OAUTH` KV binding shape.
-- `scripts/oauth-setup.mjs`: prints the redirect URI and secret setup commands.
-- Docs that explain required scopes and deployment steps.
+1. Open:
 
-## What Git must not include
+   ```txt
+   https://cfops.nothingunseen.com/oauth/cloudflare/start
+   ```
+
+2. Review and approve Cloudflare's consent screen.
+3. Copy the connector key or complete MCP configuration shown once on the success page.
+4. Use this MCP endpoint:
+
+   ```txt
+   https://cfops.nothingunseen.com/mcp
+   ```
+
+5. Send the connector key:
+
+   ```http
+   Authorization: Bearer cfops_YOUR_CONNECTOR_KEY
+   ```
+
+The connector key is a password for this MCP connection, not a Cloudflare API token. Keep it out of source control and screenshots.
+
+## Client examples
+
+Claude Desktop or Cursor-style JSON:
+
+```json
+{
+  "mcpServers": {
+    "cloudflareOps": {
+      "url": "https://cfops.nothingunseen.com/mcp",
+      "headers": {
+        "Authorization": "Bearer cfops_YOUR_CONNECTOR_KEY"
+      }
+    }
+  }
+}
+```
+
+Codex CLI:
+
+```sh
+codex mcp add cloudflare-ops --url https://cfops.nothingunseen.com/mcp \
+  --bearer-token-env-var CFOPS_CONNECTOR_KEY
+```
+
+Store `CFOPS_CONNECTOR_KEY` in your own environment, not in Git.
+
+## Isolation model
+
+- OAuth state and connection IDs are generated with cryptographically secure randomness.
+- The raw `cfops_` key is displayed once after consent.
+- KV stores only `SHA-256(connector key)` → one random connection ID.
+- That connection ID stores one Cloudflare OAuth grant server-side.
+- MCP tool arguments cannot change the authenticated connection.
+- Two users cannot select each other's connection with a `tenant` value.
+- Expiring access tokens refresh server-side when a refresh token is available.
+- Status returns scope and timestamps, never access or refresh tokens.
+- Revocation deletes both the connector-key mapping and its OAuth connection.
+- Mutating tools remain dry-run until the caller explicitly passes `apply: true`.
+
+## Routes
+
+| Route | Method | Authentication | Purpose |
+|---|---:|---|---|
+| `/oauth/cloudflare/start` | GET | None | Begin Cloudflare consent |
+| `/oauth/cloudflare/callback` | GET | OAuth state | Exchange the code and show the connector key once |
+| `/oauth/cloudflare/status` | GET | Bearer connector key | Report safe connection metadata |
+| `/oauth/cloudflare/revoke` | POST | Bearer connector key | Delete that connector and connection |
+| `/mcp` | POST | Bearer connector key | MCP JSON-RPC / Streamable HTTP endpoint |
+
+Status example:
+
+```sh
+curl -H "Authorization: Bearer $CFOPS_CONNECTOR_KEY" \
+  https://cfops.nothingunseen.com/oauth/cloudflare/status
+```
+
+Revoke example:
+
+```sh
+curl -X POST -H "Authorization: Bearer $CFOPS_CONNECTOR_KEY" \
+  https://cfops.nothingunseen.com/oauth/cloudflare/revoke
+```
+
+## Self-host from Git
+
+The repository contains code and placeholders only. It must never contain:
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_OAUTH_CLIENT_SECRET`
-- OAuth access/refresh tokens
-- `.dev.vars` with real values
-- Any one forever mega token
+- OAuth access or refresh tokens
+- connector keys
+- populated `.dev.vars`, `.env`, or credentials copied into config
 
-## How a deployed Git app gets OAuth
-
-1. Deploy the Worker from this repo.
-2. Create a Cloudflare OAuth client in the Cloudflare dashboard or API.
-3. Set the redirect URI to:
-
-```txt
-https://<your-worker-host>/oauth/cloudflare/callback
-```
-
-4. Store the OAuth client values as Worker secrets:
+Deploy your own connector:
 
 ```sh
+git clone https://github.com/pain2hustle/cloudflare-ops-mcp.git
+cd cloudflare-ops-mcp
+npm install
+npm run oauth:setup -- https://your-worker-host
 cd worker
 npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_ID
 npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_SECRET
@@ -39,15 +115,19 @@ npx wrangler secret put CLOUDFLARE_OAUTH_REDIRECT_URI
 npx wrangler deploy
 ```
 
-5. Send the user to:
+Set the OAuth redirect URI to:
 
 ```txt
-https://<your-worker-host>/oauth/cloudflare/start?tenant=<user-or-account-id>
+https://your-worker-host/oauth/cloudflare/callback
 ```
 
-6. Cloudflare shows the consent screen. After approval, the Worker stores the tenant token in `CLOUDFLARE_OPS_OAUTH` KV. MCP tools can then be called with `{ "tenant": "<user-or-account-id>" }`.
+The included `CLOUDFLARE_OPS_OAUTH` KV binding stores OAuth state, hashed connector sessions, and encrypted-at-rest connection records.
 
-## Scopes
+## Optional private admin fallback
+
+A private owner may set `MCP_ACCESS_KEY` and `CLOUDFLARE_API_TOKEN` as Worker secrets for backward compatibility. That path is an administrator fallback, not the public-user credential model. Never share the admin key with public users.
+
+## Scope policy
 
 Default core scopes:
 
@@ -55,41 +135,8 @@ Default core scopes:
 zone.read dns.write email-routing-address.write email-routing-rule.write
 ```
 
-For broader Cloudflare Ops, configure the OAuth client with only the additional scopes your UI exposes, then set the exact selected scope list as a Worker secret:
+Request only the scopes required by the enabled tools. Pages, cache purge, Turnstile, Workers, KV, R2, D1, or account-level tools may require additional Cloudflare permissions. Keep every OAuth app least-privilege and keep every write approval-gated.
 
-```sh
-npx wrangler secret put CLOUDFLARE_OAUTH_SCOPES
-```
+## Upgrade note from v0.2
 
-Example value:
-
-```txt
-zone.read dns.write email-routing-address.write email-routing-rule.write
-```
-
-Do not blindly request every available scope. If you add Pages, cache purge, Turnstile, Workers, KV, R2, D1, or account-level tools, add the matching Cloudflare OAuth scopes only when those tools exist and remain approval-gated.
-
-Cloudflare says OAuth apps use the Authorization Code flow, and OAuth scope names correspond to Cloudflare API token permission names. Use Cloudflare's current scope list when creating the OAuth client.
-
-## Routes
-
-- `GET /oauth/cloudflare/start?tenant=<id>` redirects the user to Cloudflare consent.
-- `GET /oauth/cloudflare/callback` exchanges the code for a token and stores it server-side.
-- `GET /oauth/cloudflare/status?tenant=<id>` reports connection status without exposing the token.
-
-The Worker root JSON also reports whether OAuth is configured and shows the start/callback/status URLs.
-
-## Safety model
-
-- OAuth access tokens stay inside the Worker/KV.
-- Agents never receive Cloudflare tokens.
-- The MCP endpoint still requires `MCP_ACCESS_KEY`.
-- Mutating tools stay dry-run until `apply: true`.
-- Users can revoke the OAuth client in Cloudflare.
-- Prefer OAuth per user/tenant over a shared permanent API token.
-
-## Setup helper
-
-```sh
-npm run oauth:setup -- https://<your-worker-host>
-```
+The old `?tenant=<id>` public flow is retired. Do not pass tenant IDs in MCP calls. Reconnect through `/oauth/cloudflare/start` to receive a per-user `cfops_` key. Existing private admin deployments may keep their owner-only fallback while users migrate.

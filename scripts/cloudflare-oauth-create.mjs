@@ -67,7 +67,8 @@ if (deploy) {
   if (bulk.status !== 0) process.exit(bulk.status || 1);
   const dep = spawnSync("npx", ["wrangler", "deploy"], { cwd: "worker", stdio: "inherit", shell: true });
   if (dep.status !== 0) process.exit(dep.status || 1);
-  console.log(`OAuth connect URL: ${origin}/oauth/cloudflare/start?tenant=default`);
+  console.log(`OAuth connect URL: ${origin}/oauth/cloudflare/start`);
+  console.log(`MCP endpoint:      ${origin}/mcp`);
 } else {
   console.log(`Secret bulk file written to ${secretFile}`);
   console.log(`Run: cd worker && npx wrangler secret bulk ${secretFile} && npx wrangler deploy`);

@@ -6,7 +6,7 @@ test("worker GET advertises broad Cloudflare Ops tool catalog", async () => {
   const res = await worker.fetch(new Request("https://example.test/"), {});
   assert.equal(res.status, 200);
   const body = await res.json();
-  assert.equal(body.server.title, "Cloudflare Ops MCP (DNS, Email, Pages, Cache, Turnstile)");
+  assert.equal(body.server.title, "AMH Cloudflare Ops MCP by WT");
   for (const tool of [
     "scan_zone",
     "apply_dns_record",
@@ -31,5 +31,7 @@ test("worker browser status page uses green OAuth connect UI", async () => {
   const html = await res.text();
   assert.match(html, /#6ee7a3/);
   assert.match(html, /Connect Cloudflare/);
-  assert.match(html, /no mega token/i);
+  assert.match(html, /no shared API token/i);
+  assert.match(html, /AMH|M H/);
+  assert.match(html, /Per-user keys/i);
 });

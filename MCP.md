@@ -1,58 +1,69 @@
-# Cloudflare Ops MCP - DNS, Email, Pages, Cache, Turnstile
+# AMH Cloudflare Ops MCP by WT
 
-Cloudflare Ops MCP includes an unofficial Cloudflare operations MCP server for AI agents. It is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC. It is built to run as a Cloudflare Worker and deploy with Wrangler.
+`-/\-\ M H // WT`
+
+The remote server is an unofficial Cloudflare operations MCP for DNS, Email Routing, DMARC, SPF, BIMI, Pages, cache, Turnstile, account diagnostics, and scoped-token workflows. It is independent open-source software, not made or endorsed by Cloudflare.
+
+## Public hosted endpoint
+
+```txt
+https://cfops.nothingunseen.com/mcp
+```
+
+Connect your Cloudflare account first:
+
+```txt
+https://cfops.nothingunseen.com/oauth/cloudflare/start
+```
+
+After consent, copy the one-time `cfops_` key and send it as:
+
+```http
+Authorization: Bearer cfops_YOUR_CONNECTOR_KEY
+```
+
+This key is not a Cloudflare API token. The Cloudflare OAuth grant remains server-side and is bound to only this connector.
+
+## MCP configuration
+
+```json
+{
+  "mcpServers": {
+    "cloudflareOps": {
+      "url": "https://cfops.nothingunseen.com/mcp",
+      "headers": {
+        "Authorization": "Bearer cfops_YOUR_CONNECTOR_KEY"
+      }
+    }
+  }
+}
+```
 
 ## Tool lanes
 
-- Cloudflare zone scan.
-- DNS record upsert.
-- DMARC policy planning and apply.
-- BIMI setup with DMARC precondition.
-- SPF, DKIM, MX, and Email Routing diagnostics.
-- Email Routing rule setup.
-- Approval-gated writes and audit logging.
+- Zone and DNS scan, plan, guarded upsert, and verification.
+- SPF, DKIM, MX, DMARC, BIMI, and Email Routing diagnostics.
+- DMARC, BIMI, Email Routing, Pages cutover, cache purge, and Turnstile changes.
+- Account doctor, domain ownership diagnosis, and Pages branch checks.
+- Least-privilege token mint/list/revoke workflows.
 
-## What it does
+Every mutating tool is dry-run by default. Read the returned diff, then pass `apply: true` only after the account owner approves it.
 
-- Scan Cloudflare zones for DNS, SPF, DKIM, DMARC, BIMI, MX, and Email Routing status.
-- Plan email-authentication fixes without writing anything.
-- Apply DNS, DMARC, BIMI, and Email Routing changes only after explicit approval.
-- Keep the Cloudflare API token as a Worker secret, not a tool parameter.
-- Require an MCP access key so the public Worker URL is not open to the internet; POST requests fail closed if the key is missing.
-
-## Official status
-
-Cloudflare Ops MCP is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC. It is independent open-source software. It is not made by Cloudflare, not endorsed by Cloudflare, and not sponsored by Cloudflare. It is compatible with Cloudflare APIs and Wrangler.
-
-## Wrangler deploy
+## Self-host with Wrangler
 
 ```sh
+git clone https://github.com/pain2hustle/cloudflare-ops-mcp.git
+cd cloudflare-ops-mcp
+npm install
+npm run oauth:setup -- https://your-worker-host
 cd worker
-npx wrangler secret put CLOUDFLARE_API_TOKEN
-npx wrangler secret put MCP_ACCESS_KEY
+npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_ID
+npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_SECRET
+npx wrangler secret put CLOUDFLARE_OAUTH_REDIRECT_URI
 npx wrangler deploy
 ```
 
-## OAuth hosted app path
-
-A Git deployment should not rely on one forever mega token. Set up Cloudflare OAuth, store the OAuth client values as Worker secrets, then send users to:
-
-```txt
-https://<your-worker-host>/oauth/cloudflare/start?tenant=<user-or-account-id>
-```
-
-After consent, MCP tools can include the same `tenant` value. The Worker uses the tenant token server-side and never returns it to the agent.
-
-See [OAUTH.md](OAUTH.md).
-## MCP client
-
-Point an MCP client at the deployed Worker URL and send:
-
-```
-Authorization: Bearer <MCP_ACCESS_KEY>
-```
-
-Use dry-run tools first, inspect the diff, then apply only when the owner approves.
+Real credentials belong in Wrangler secrets, never in `worker/wrangler.jsonc` or Git. See [OAUTH.md](OAUTH.md) for the complete hosted and self-hosted authorization model.
 
 ## Contact
 

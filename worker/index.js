@@ -27,12 +27,20 @@ import { planPagesCutover } from "../src/pages.js";
 import { createTurnstileWidget } from "../src/turnstile.js";
 import { mintScopedToken, listTokens, revokeToken, TOKEN_PRESETS } from "../src/tokens.js";
 import { whoServesDomain, accountDoctor, pagesBranchCheck } from "../src/doctor.js";
-import { getOAuthAccessToken, getOAuthConfigStatus, handleOAuthCallback, handleOAuthStart, handleOAuthStatus } from "./oauth.js";
+import {
+  authorizeConnector,
+  getOAuthAccessToken,
+  getOAuthConfigStatus,
+  handleOAuthCallback,
+  handleOAuthRevoke,
+  handleOAuthStart,
+  handleOAuthStatus,
+} from "./oauth.js";
 
 const SERVER = {
   name: "cloudflare-ops-mcp",
-  title: "Cloudflare Ops MCP (DNS, Email, Pages, Cache, Turnstile)",
-  version: "0.2.0",
+  title: "AMH Cloudflare Ops MCP by WT",
+  version: "0.3.0",
 };
 const PROTOCOL_FALLBACK = "2025-06-18";
 
@@ -275,13 +283,15 @@ const TOOLS = [
 ];
 
 // ── Tool implementations (each returns a plain object; serialized as text) ──
-async function runTool(name, args, env) {
-  const tenant = String(args.tenant || "default").trim() || "default";
-  const token = (await getOAuthAccessToken(env, tenant)) || env.CLOUDFLARE_API_TOKEN;
+async function runTool(name, args, env, authContext) {
+  // OAuth callers are bound to their authenticated connection. Only the private
+  // legacy admin key may select a legacy tenant or use the fallback Worker token.
+  const legacyTenant = authContext?.mode === "admin" ? String(args.tenant || "default").trim() || "default" : "default";
+  const token = await getOAuthAccessToken(env, authContext, legacyTenant);
   if (!token) {
     return {
       error:
-        "No Cloudflare token configured. Connect Cloudflare with /oauth/cloudflare/start or set CLOUDFLARE_API_TOKEN as a Worker secret.",
+        "No Cloudflare connection is available. Connect at /oauth/cloudflare/start, or configure the private admin fallback token.",
     };
   }
   const client = new CloudflareClient({ token });
@@ -418,7 +428,7 @@ function rpcError(id, code, message) {
   return { jsonrpc: "2.0", id, error: { code, message } };
 }
 
-async function handleRpc(msg, env) {
+async function handleRpc(msg, env, authContext) {
   const { id, method, params } = msg || {};
   // Notifications (no id) — acknowledge with nothing.
   if (id === undefined || id === null) return null;
@@ -432,7 +442,7 @@ async function handleRpc(msg, env) {
       instructions:
         "Cloudflare Ops MCP audits and safely changes common Cloudflare work across DNS, email authentication, Pages cutovers, cache purge, Turnstile widgets, and Email Routing. " +
         "Use it to scan a Cloudflare zone, diagnose email deliverability and spoofing gaps, apply targeted DNS/DMARC/BIMI/Email Routing fixes, cut a hostname to Cloudflare Pages, purge cache, or create a Turnstile widget. " +
-        "Safety: every write is DRY-RUN by default and returns a diff; nothing changes unless you pass apply=true. The scoped Cloudflare API token is supplied to the server as a secret, never as a tool argument. " +
+        "Safety: every write is DRY-RUN by default and returns a diff; nothing changes unless you pass apply=true. Each hosted user is bound to their own server-side Cloudflare OAuth connection; Cloudflare tokens are never tool arguments or shared through Git. " +
         "Cloudflare Ops MCP / cloudflare-ops-mcp is an independent, third-party open-source tool - not affiliated with, endorsed by, or sponsored by Cloudflare, Inc.; Cloudflare is used nominatively to name the service this tool works with.",
     });
   }
@@ -444,11 +454,16 @@ async function handleRpc(msg, env) {
     const tool = TOOLS.find((t) => t.name === toolName);
     if (!tool) return rpcError(id, -32602, `unknown tool: ${toolName}`);
     try {
-      const out = await runTool(toolName, args, env);
+      const out = await runTool(toolName, args, env, authContext);
       const isError = !!(out && out.error);
       // Best-effort audit to observability (redacted; never the token).
       if (args.apply === true && !isError) {
-        console.log(redactToken(`[audit] ${toolName} apply domain=${args.domain}`));
+        console.log(JSON.stringify({
+          event: "tool_apply",
+          tool: toolName,
+          domain: String(args.domain || ""),
+          auth_mode: authContext?.mode || "unknown",
+        }));
       }
       return rpcResult(id, {
         content: [{ type: "text", text: JSON.stringify(out, null, 2) }],
@@ -477,7 +492,6 @@ function renderStatusHtml(info) {
   const oauthState = info.oauth.configured ? "OAuth ready" : "OAuth setup needed";
   const oauthClass = info.oauth.configured ? "ok" : "warn";
   const start = info.oauth.routes.start;
-  const status = info.oauth.routes.status;
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -497,16 +511,15 @@ function renderStatusHtml(info) {
 </head>
 <body>
 <main class="wrap">
-  <div class="top"><div class="brand"><span class="mark"></span><span>Cloudflare Ops MCP</span></div><div class="pill">Green mode / no mega token</div></div>
+  <div class="top"><div class="brand"><span class="mark"></span><span>-/\\-\\ M H // WT</span></div><div class="pill">Per-user OAuth · no shared API token</div></div>
   <section class="hero">
     <div class="copy">
       <div class="eyebrow">OAuth-first Cloudflare control</div>
-      <h1>Connect Cloudflare. Keep tokens out of chat.</h1>
-      <p>DNS, Email Routing, DMARC, BIMI, Pages cutovers, cache purge, and Turnstile tools stay approval-gated. Users connect through Cloudflare OAuth instead of one permanent all-access token.</p>
+      <h1>Your Cloudflare. Your connection.</h1>
+      <p>DNS, Email Routing, DMARC, BIMI, Pages cutovers, cache purge, and Turnstile tools stay approval-gated. Every user connects through Cloudflare OAuth and receives a separate MCP connector key—never the owner's API token.</p>
       <div class="actions">
         <a class="btn primary" href="${start}">Connect Cloudflare</a>
-        <a class="btn" href="${status}">Check OAuth Status</a>
-        <a class="btn" href="/oauth/cloudflare/status?tenant=default">Tenant Default</a>
+        <a class="btn" href="https://github.com/pain2hustle/cloudflare-ops-mcp">Setup &amp; examples</a>
         <a class="btn" href="?format=json">View JSON</a>
       </div>
     </div>
@@ -514,11 +527,11 @@ function renderStatusHtml(info) {
       <div class="status">
         <div class="row"><span class="label">Worker</span><span class="value ok">Live</span></div>
         <div class="row"><span class="label">OAuth</span><span class="value ${oauthClass}">${oauthState}</span></div>
-        <div class="row"><span class="label">MCP Lock</span><span class="value ${info.auth_required ? "ok" : "warn"}">${info.auth_required ? "Access key set" : "Needs MCP_ACCESS_KEY"}</span></div>
+        <div class="row"><span class="label">User Isolation</span><span class="value ${info.oauth.configured ? "ok" : "warn"}">${info.oauth.configured ? "Per-user keys" : "Setup needed"}</span></div>
         <div class="row"><span class="label">Fallback Token</span><span class="value ${info.token_configured ? "ok" : "warn"}">${info.token_configured ? "Configured" : "OAuth only"}</span></div>
       </div>
       <div class="tools">${tools}</div>
-      <div class="note">Git can ship this connector safely. Secrets are set with Wrangler after deploy, and users can revoke OAuth in Cloudflare.</div>
+      <div class="note">Git ships code, never the owner's secrets. Connector keys are stored only as hashes and cannot switch to another user's OAuth grant.</div>
     </div>
   </section>
 </main>
@@ -533,16 +546,18 @@ async function fetchInner(request, env) {
     if (url.pathname === "/oauth/cloudflare/start") return handleOAuthStart(request, env);
     if (url.pathname === "/oauth/cloudflare/callback") return handleOAuthCallback(request, env);
     if (url.pathname === "/oauth/cloudflare/status") return handleOAuthStatus(request, env);
+    if (url.pathname === "/oauth/cloudflare/revoke") return handleOAuthRevoke(request, env);
     // Health/info on GET. Browsers get a small green connect page; API clients get JSON.
     if (request.method === "GET") {
       const info = {
         ok: true,
         server: SERVER,
         tools: TOOLS.map((t) => t.name),
-        auth_required: !!env.MCP_ACCESS_KEY,
+        auth_required: true,
+        admin_fallback_configured: !!env.MCP_ACCESS_KEY,
         token_configured: !!env.CLOUDFLARE_API_TOKEN,
         oauth: getOAuthConfigStatus(env, url.origin),
-        note: "POST JSON-RPC 2.0 (MCP) to this endpoint. Use /oauth/cloudflare/start?tenant=default to connect Cloudflare without a permanent mega token.",
+        note: "Connect at /oauth/cloudflare/start, then POST MCP JSON-RPC to /mcp with your one-user connector key. Cloudflare tokens remain server-side.",
       };
       const wantsJson = url.searchParams.get("format") === "json" || /application\/json/i.test(request.headers.get("accept") || "");
       if (!wantsJson && /text\/html/i.test(request.headers.get("accept") || "")) {
@@ -554,20 +569,13 @@ async function fetchInner(request, env) {
       return new Response("Method Not Allowed", { status: 405, headers: CORS });
     }
 
-    // Endpoint lock: this server can MUTATE DNS, so a public URL must fail
-    // closed. MCP_ACCESS_KEY is required for every POST; do not deploy this
-    // Worker as a callable MCP server until the secret exists.
-    const gate = env.MCP_ACCESS_KEY;
-    if (!gate) {
-      return new Response(JSON.stringify(rpcError(null, -32002, "server missing MCP_ACCESS_KEY")), {
-        status: 503,
-        headers: { "content-type": "application/json", ...CORS },
-      });
-    }
+    // Every MCP request fails closed unless its opaque connector key resolves to
+    // one OAuth connection, or it uses the private legacy admin key.
     const auth = request.headers.get("authorization") || "";
     const provided = (/^Bearer\s+/i.test(auth) ? auth.replace(/^Bearer\s+/i, "") : "").trim()
       || (request.headers.get("x-mcp-key") || "").trim();
-    if (provided !== gate) {
+    const authContext = await authorizeConnector(env, provided);
+    if (!authContext.ok) {
       return new Response(JSON.stringify(rpcError(null, -32001, "unauthorized")), {
         status: 401,
         headers: { "content-type": "application/json", "www-authenticate": "Bearer", ...CORS },
@@ -584,7 +592,7 @@ async function fetchInner(request, env) {
     const messages = single ? [body] : body;
     const out = [];
     for (const m of messages) {
-      const r = await handleRpc(m, env);
+      const r = await handleRpc(m, env, authContext);
       if (r) out.push(r);
     }
 

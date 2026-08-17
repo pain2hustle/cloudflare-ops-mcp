@@ -1,9 +1,9 @@
 {
     "$schema":  "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
     "name":  "io.github.pain2hustle/cloudflare-ops-mcp",
-    "title":  "Cloudflare Ops MCP - DNS, Email, Pages, Cache, Turnstile",
-    "description":  "Unofficial Cloudflare Ops MCP server with approval-gated DNS, Email Routing, DMARC/SPF/BIMI, Pages cutover, cache purge, and Turnstile tools.",
-    "version":  "0.2.0",
+    "title":  "AMH Cloudflare Ops MCP by WT",
+    "description":  "OAuth-first Cloudflare Ops MCP with isolated per-user Cloudflare connections and approval-gated DNS, Email Routing, DMARC/SPF/BIMI, Pages, cache, and Turnstile tools.",
+    "version":  "0.3.0",
     "repository":  {
                        "url":  "https://github.com/pain2hustle/cloudflare-ops-mcp",
                        "source":  "github"
@@ -11,17 +11,11 @@
     "remotes":  [
                     {
                         "type":  "streamable-http",
-                        "url":  "https://cfops.nothingunseen.com",
-                        "variables":  {
-                                          "workers_subdomain":  {
-                                                                    "description":  "Your Cloudflare Workers subdomain after deploying worker/ with Wrangler.",
-                                                                    "isRequired":  true
-                                                                }
-                                      },
+                        "url":  "https://cfops.nothingunseen.com/mcp",
                         "headers":  [
                                         {
                                             "name":  "Authorization",
-                                            "description":  "Bearer token for MCP_ACCESS_KEY configured as a Worker secret.",
+                                            "description":  "Your one-user cfops_ connector key, issued after Cloudflare OAuth. This is not a Cloudflare API token.",
                                             "isRequired":  true,
                                             "isSecret":  true
                                         }
@@ -32,7 +26,7 @@
                      {
                          "registryType":  "npm",
                          "identifier":  "cloudflare-ops-mcp",
-                         "version":  "0.2.0",
+                         "version":  "0.3.0",
                          "transport":  {
                                            "type":  "stdio"
                                        },

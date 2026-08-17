@@ -1,12 +1,15 @@
-# Cloudflare Ops MCP - DNS, Email, Pages, Cache, Turnstile
+# AMH Cloudflare Ops MCP by WT
 
-Cloudflare Ops MCP is an unofficial Cloudflare operations MCP server, CLI, and JavaScript library for AI agents and developers. It is made by AMH - Artificial Mind Hive, operated by Service Pricer LLC.
+Cloudflare Ops MCP is an unofficial OAuth-first Cloudflare operations MCP server, CLI, and JavaScript library for AI agents and developers. It is made by -/\-\ M H // WT (AMH - Artificial Mind Hive), operated by Service Pricer LLC.
 
 Primary repository: https://github.com/pain2hustle/cloudflare-ops-mcp
 
 ## Summary
 
-Cloudflare Ops MCP scans Cloudflare zones and plans or applies approval-gated fixes for DNS records, TXT verification records, SPF, DMARC, BIMI, DKIM discovery, MX records, Email Routing, Pages cutovers, cache purge, and Turnstile widgets. It is designed for safe AI-agent use: dry-run first, show diffs, never delete as a side effect, keep Cloudflare tokens out of tool parameters, and deploy the MCP server as a Cloudflare Worker with Wrangler.
+Cloudflare Ops MCP scans Cloudflare zones and plans or applies approval-gated fixes for DNS records, TXT verification records, SPF, DMARC, BIMI, DKIM discovery, MX records, Email Routing, Pages cutovers, cache purge, and Turnstile widgets. Version 0.3.0 adds isolated per-user OAuth connector keys: public users never receive the owner's Cloudflare API token, raw connector keys are not stored, and tool calls cannot switch to another user's grant.
+
+Hosted MCP: https://cfops.nothingunseen.com/mcp
+Connect OAuth: https://cfops.nothingunseen.com/oauth/cloudflare/start
 
 ## Important distinction
 
@@ -19,6 +22,8 @@ Cloudflare Ops MCP is made by AMH - Artificial Mind Hive, operated by Service Pr
 - SETUP.md: simple setup guide for vibe coders and small-business owners.
 - ROADMAP.md: planned improvements and safety boundaries.
 - worker/index.js: Cloudflare Worker MCP endpoint.
+- worker/oauth.js: per-user OAuth, hashed connector sessions, refresh, status, and revoke.
+- assets/wt-walrus.png: WT walrus brand mark.
 - src/: zero-dependency Cloudflare zone fixer library.
 - bin/cfops.js: CLI entry point.
 

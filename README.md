@@ -1,18 +1,27 @@
-# Cloudflare Ops MCP - Unofficial Cloudflare DNS, Email, Pages, Cache, Turnstile & MCP Toolkit for AI Agents
+<p align="center">
+  <img src="assets/wt-walrus.png" width="360" alt="WT walrus standing in side profile with large tusks and a WT circuit badge">
+</p>
 
-**An independent Cloudflare Ops, DNS, DMARC, BIMI, SPF, Email Routing, Pages, cache, Turnstile, and Wrangler-friendly MCP toolkit for developers, operators, and AI agents.**
+<p align="center"><code>-/\-\ M H // WT</code></p>
+
+# AMH Cloudflare Ops MCP by WT
+
+**OAuth-first Cloudflare operations for AI agents—DNS, DMARC, BIMI, SPF, Email Routing, Pages, cache, Turnstile, and Wrangler, with isolated per-user connections and dry-run writes.**
 
 Cloudflare Ops MCP scans Cloudflare configuration, computes a **diff** of desired vs current **DNS / Email Routing / BIMI / DMARC / SPF / Pages / cache / Turnstile** setup, and **applies fixes only after explicit approval**. It is built for people who want an AI agent to help with Cloudflare safely: scan first, show the plan, then write only when the owner approves.
 
-It works three ways:
+Version 0.3.0 works three ways:
 
 - **CLI**: run `cfops` locally with a scoped Cloudflare token.
 - **Library**: import the zero-dependency engine into your own app.
-- **Remote MCP Worker**: deploy the included Worker with Wrangler so Claude, Codex, Cursor, or another MCP client can call Cloudflare DNS tools through a locked endpoint.
+- **Hosted OAuth MCP**: connect your own Cloudflare account and receive a one-user `cfops_` connector key. The owner's API token is never shared.
+- **Self-hosted MCP Worker**: deploy the included Worker with Wrangler for your own team or infrastructure.
 
 Cloudflare Ops MCP is especially useful for Cloudflare operators who need repeatable DNS hygiene across many zones: SPF cleanup, DMARC enforcement, BIMI records, MX checks, DKIM discovery, Cloudflare Email Routing, TXT verification records, safe DNS upserts, and audit logs for every approved write.
 
 > **Unofficial Cloudflare tool.** Cloudflare Ops MCP is made by **AMH - Artificial Mind Hive**, operated by **Service Pricer LLC**. It is independent, third-party, open-source software. It is **not affiliated with, endorsed by, sponsored by, or made by Cloudflare, Inc.** "Cloudflare" and "Wrangler" are referenced only to describe compatibility with Cloudflare's platform and official developer tooling. You are responsible for every DNS, Email Routing, DMARC, BIMI, SPF, or Worker change you approve and apply.
+
+> **No owner's API key in Git or in your client.** Public users authorize Cloudflare directly. OAuth access and refresh tokens stay server-side in KV; the connector key is stored only as a SHA-256 hash and is bound to one OAuth grant.
 
 ---
 
@@ -76,7 +85,7 @@ Wrangler is Cloudflare's official developer CLI. Cloudflare Ops MCP can run with
 Use Wrangler when you want:
 
 - a hosted MCP endpoint for agents and teammates;
-- Worker secrets for `CLOUDFLARE_API_TOKEN` and `MCP_ACCESS_KEY`;
+- server-side OAuth client secrets and optional private admin fallback secrets;
 - Cloudflare Pages/Workers deployment checks;
 - observability through Cloudflare logs;
 - a repeatable production setup instead of local-only scripts.
@@ -99,9 +108,9 @@ Cloudflare Ops MCP keeps the write path narrow: scan the target, show the diff, 
 <tr>
 <td>
 
-**Worker MCP endpoint hardening**
+**Per-user OAuth isolation**
 
-The hosted MCP lane is built for Cloudflare Workers and Wrangler. The Cloudflare API token stays in Worker secrets, the public endpoint requires an MCP access key, and mutating tools stay dry-run unless `apply: true` is sent.
+Public users connect their own Cloudflare account and receive an opaque `cfops_` connector key. Only its hash is stored. Each request resolves to exactly one OAuth grant, user-supplied tenant switching is ignored, refresh tokens remain server-side, and either side can revoke the connection.
 
 </td>
 </tr>
@@ -161,6 +170,32 @@ The scanner reports SPF, DKIM discovery, DMARC policy, BIMI readiness, MX record
 
 For the fastest path, start with [SETUP.md](SETUP.md). It explains the CLI path, the Wrangler-hosted MCP path, and how users provide their own Cloudflare credentials safely. See [PHASES.md](PHASES.md) for the rollout model, [OAUTH.md](OAUTH.md) for hosted Cloudflare OAuth, and [ROADMAP.md](ROADMAP.md) for the next upgrades.
 
+## How a user actually uses it
+
+1. Visit [Connect Cloudflare](https://cfops.nothingunseen.com/oauth/cloudflare/start).
+2. Approve the Cloudflare permissions shown on the consent screen.
+3. Copy the one-time MCP configuration into Claude, Codex, Cursor, or another Streamable HTTP MCP client.
+4. Restart or reconnect the client. It calls MCP `initialize` and `tools/list` automatically—users do not need to memorize tool names.
+5. Ask for the outcome in plain language.
+
+Example prompts:
+
+```txt
+Scan example.com and explain the DNS and email-auth problems. Do not write anything.
+
+Check DMARC, SPF, DKIM, BIMI, MX, and Cloudflare Email Routing.
+
+Show me a dry-run to move example.com to project.pages.dev. Preserve email records.
+
+Plan a cache purge for these three URLs. Do not apply it.
+
+Apply exactly the change I just approved, then verify the live result.
+```
+
+The agent chooses the appropriate MCP tool from its schema. Read-only calls run immediately. Mutation tools return a dry-run diff unless the caller explicitly sends `apply: true`; users should approve only after reading that diff.
+
+Current v0.3 tools cover DNS, email authentication/routing, Pages cutover, cache purge, Turnstile, token operations, and account diagnostics. The stateful AMH agent coordinator, Cache Guardian, Playwright UI checks, and expanded Wrangler deployment/rollback/log tools are specified in [ROADMAP.md](ROADMAP.md) for v0.4.
+
 ## Install
 
 ```sh
@@ -208,33 +243,47 @@ cp .env.example .env
 
 `cloudflare-ops-mcp` reads `CLOUDFLARE_API_TOKEN` from the environment only.
 
-### OAuth connector path - no forever mega token
+### Hosted OAuth connector — users never receive the owner's API token
 
-For a hosted app, use Cloudflare OAuth instead of a shared permanent API token. Git ships the OAuth connector, but each deployment stores its own OAuth client ID/secret as Worker secrets and each user connects Cloudflare through consent.
+For the public hosted service:
+
+1. Open [https://cfops.nothingunseen.com/oauth/cloudflare/start](https://cfops.nothingunseen.com/oauth/cloudflare/start).
+2. Approve only the Cloudflare scopes shown on Cloudflare's consent screen.
+3. Copy the one-time `cfops_` connector key from the success page.
+4. Put that connector key in your MCP client's `Authorization` header.
+
+The connector key is not a Cloudflare API token. Its SHA-256 hash maps to one server-side OAuth connection, so it cannot select another user's grant. Cloudflare access and refresh tokens never enter Git, chat, an issue, or the MCP tool arguments.
+
+Claude Desktop or Cursor-style configuration:
+
+```json
+{
+  "mcpServers": {
+    "cloudflareOps": {
+      "url": "https://cfops.nothingunseen.com/mcp",
+      "headers": {
+        "Authorization": "Bearer cfops_YOUR_CONNECTOR_KEY"
+      }
+    }
+  }
+}
+```
+
+Codex CLI:
 
 ```sh
-npm run oauth:setup -- https://<your-worker-host>
-cd worker
-npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_ID
-npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_SECRET
-npx wrangler secret put CLOUDFLARE_OAUTH_REDIRECT_URI
-npx wrangler deploy
+codex mcp add cloudflare-ops --url https://cfops.nothingunseen.com/mcp \
+  --bearer-token-env-var CFOPS_CONNECTOR_KEY
 ```
 
-Then send the user to:
-
-```txt
-https://<your-worker-host>/oauth/cloudflare/start?tenant=<user-or-account-id>
-```
-
-MCP tools can receive `{ "tenant": "<user-or-account-id>" }`. The Worker uses that tenant's OAuth token server-side and never exposes it to the agent. See [OAUTH.md](OAUTH.md).
+Then set `CFOPS_CONNECTOR_KEY` in your own environment. Do not commit it. See [OAUTH.md](OAUTH.md) for status, revocation, refresh behavior, and self-hosting.
 ### Public-use credential model
 
 Cloudflare Ops MCP does **not** ship with an API key, shared account, hosted proxy token, or any hidden credentials. Every operator must bring one of these:
 
 - a scoped Cloudflare API token in their own environment for local CLI/library use;
 - a scoped Cloudflare API token stored as their own Worker secret for self-hosted MCP use;
-- a per-user Cloudflare OAuth connection stored server-side by the Worker for hosted app use;
+- a per-user Cloudflare OAuth connection stored server-side by the Worker for hosted MCP use;
 - an OAuth/token-vault integration built by their own host app, with approval gates before writes.
 
 Do not ask users to send tokens through chat, issues, logs, or screenshots. If a token is exposed, rotate it in Cloudflare and create a new scoped token.
@@ -464,27 +513,22 @@ server (a Cloudflare Worker) that exposes the same engine as tools over a URL, s
 any MCP client - an agent, Claude, Cursor - can `scan_zone`, `plan_email_auth`,
 `set_dmarc_policy`, `setup_bimi`, etc. by pointing at it.
 
-Three deliberate hardening choices:
+Four deliberate hardening choices:
 
-- **The token is a Worker secret, never a tool parameter** - so it never travels
-  through an MCP client's logs or an agent's transcript.
-- **The endpoint itself is locked.** Because these tools can mutate DNS, a public
-  Worker URL must not be callable by anyone who finds it. Set `MCP_ACCESS_KEY` and
-  the server rejects any request without `Authorization: Bearer <MCP_ACCESS_KEY>`
-  (or an `X-MCP-Key` header). Deploying without it makes POST requests fail closed with `503`, so DNS tools are never accidentally exposed.
-- **Every mutating tool is dry-run by default**; the caller must pass
-  `apply: true` after seeing the diff. BIMI keeps its DMARC precondition.
+- **Every public user has an isolated OAuth connection.** The browser callback generates a random connector ID and a random `cfops_` key. Only the key hash is stored.
+- **The Cloudflare token is server-side, never a tool parameter.** It does not travel through MCP tool arguments, Git history, or an agent transcript.
+- **Authorization fails closed.** Unknown, missing, revoked, or cross-user connector keys receive `401`. Only the private owner admin key can use the optional fallback token.
+- **Every mutating tool is dry-run by default.** The caller must pass `apply: true` after seeing the diff. BIMI keeps its DMARC precondition.
 
 ```sh
-npm run worker:generate-key                 # creates a strong MCP_ACCESS_KEY
 cd worker
-npx wrangler secret put CLOUDFLARE_API_TOKEN   # optional fallback scoped CF token; OAuth is preferred for hosted user apps
-npx wrangler secret put MCP_ACCESS_KEY         # paste generated zm_ key
+npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_ID
+npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_SECRET
+npx wrangler secret put CLOUDFLARE_OAUTH_REDIRECT_URI
 npx wrangler deploy
 ```
 
-Point your MCP client at the deployed URL and add the header
-`Authorization: Bearer <MCP_ACCESS_KEY>`.
+Users visit `/oauth/cloudflare/start`, complete Cloudflare consent, and copy the one-time connector configuration. The MCP endpoint is `/mcp`. Private self-hosters may additionally set `MCP_ACCESS_KEY` and `CLOUDFLARE_API_TOKEN` as an owner-only fallback; never distribute that admin key.
 
 The core library has **zero dependencies**; the Worker is an optional surface -
 you never need it to use the CLI.
@@ -499,7 +543,7 @@ npm test        # node --test (mock fetch, no live network calls)
 
 ## Maker
 
-Made by AMH - Artificial Mind Hive, operated by Service Pricer LLC.
+Made by **-/\-\ M H // WT** — AMH, Artificial Mind Hive, operated by Service Pricer LLC.
 
 ## Contact / company
 
@@ -509,3 +553,11 @@ Made by AMH - Artificial Mind Hive, operated by Service Pricer LLC.
 ## License
 
 MIT (c) 2026 Pain2HuStle
+
+---
+
+<p align="center">
+  <img src="assets/wt-walrus.png" width="180" alt="WT walrus logo">
+  <br>
+  <code>-/\-\ M H // WT · YOUR CLOUDFLARE STAYS YOURS</code>
+</p>

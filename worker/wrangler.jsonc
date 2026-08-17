@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cloudflare-ops-mcp",
   "main": "index.js",
-  "compatibility_date": "2025-07-01",
+  "compatibility_date": "2026-08-17",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
   "workers_dev": true,
@@ -17,11 +17,12 @@
   //   npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_SECRET
   //   npx wrangler secret put CLOUDFLARE_OAUTH_REDIRECT_URI
   // Optional var/secret: CLOUDFLARE_OAUTH_SCOPES
-  // Two secrets (never vars, never in git):
+  // Private owner fallback secrets (optional; never vars, never in git):
   //   cd worker
   //   npx wrangler secret put CLOUDFLARE_API_TOKEN   # scoped CF token the tools use
-  //   npx wrangler secret put MCP_ACCESS_KEY         # lock on THIS endpoint (any random string)
-  // Clients then send:  Authorization: Bearer <MCP_ACCESS_KEY>
+  //   npx wrangler secret put MCP_ACCESS_KEY         # private owner/admin key
+  // Public users connect at /oauth/cloudflare/start and receive an isolated
+  // cfops_ connector key. The Cloudflare OAuth token stays encrypted at rest in KV.
   // Deploy:
   //   npx wrangler deploy
 }
