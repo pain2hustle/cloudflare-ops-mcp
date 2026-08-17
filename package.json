@@ -1,7 +1,7 @@
 {
   "name": "cloudflare-ops-mcp",
   "version": "0.4.0",
-  "description": "-/\\\\-\\\\ M H // WT — the bridge from K2 agents through Wrangler to your master AI. Delegate bounded tasks, verify, approve once, ship on Cloudflare. SafeTry security-audit agent, self-catching mail tests, live console, lesson vault, audit chain. Extras: DNS, DMARC/SPF/BIMI, Email Routing, Pages, cache, Turnstile.",
+  "description": "-/\\-\\ M H // WT — the bridge from K2 agents through Wrangler to your master AI. Delegate bounded tasks, verify, approve once, ship on Cloudflare. SafeTry security-audit agent, self-catching mail tests, live console, lesson vault, audit chain. Extras: DNS, DMARC/SPF/BIMI, Email Routing, Pages, cache, Turnstile.",
   "type": "module",
   "main": "src/index.js",
   "exports": {
