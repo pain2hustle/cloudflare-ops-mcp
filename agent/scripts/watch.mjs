@@ -6,6 +6,7 @@ import path from "node:path";
 
 const jobs = new Map();
 let lastOutput = [];
+let dailyUsage = null;
 const stages = {
   job_created: [5, "Packet created"], job_enqueued: [8, "Queued"], safety_preflight: [12, "Landing Guide"],
   job_started: [16, "Started"], crawl_start: [22, "Crawler"], crawl_complete: [36, "Sources landed"],
@@ -74,6 +75,7 @@ function render() {
   process.stdout.write("\x1b[2J\x1b[H");
   console.log("\x1b[1;32mAGENTS RUNNING\x1b[0m");
   console.log("\x1b[90mLive tasks · secrets/IPs are redacted\x1b[0m\n");
+  if (dailyUsage) console.log(`\x1b[1;36mToday: ${dailyUsage.used} / ${dailyUsage.limit} AI calls\x1b[0m\n`);
   // Currents at top: running work first, finished/failed sink below.
   const done = new Set(["job_completed", "job_failed", "job_cancelled"]);
   const values = [...jobs.values()].sort((a, b) =>
@@ -85,6 +87,7 @@ function render() {
     console.log(`${bar(job.percent)} ${String(job.percent).padStart(3)}%  \x1b[90m${job.id}\x1b[0m`);
     const next = job.percent < 40 ? "Primary next" : job.percent < 70 ? "Verifier next" : job.percent < 100 ? "Master next" : "Landed";
     console.log(`  ${job.stage} → ${next} · ${new Date(job.updated).toLocaleTimeString()}\n`);
+    if (job.detail) console.log(`  \x1b[31m${job.detail}\x1b[0m\n`);
   }
   if (lastOutput.length) {
     console.log("\x1b[1;33m──────────\x1b[0m");
@@ -114,8 +117,12 @@ function ingest(line) {
     id: event.job_id,
     name: event.data?.agent_name || event.data?.template_id || current.name || "Agent task",
     actor: event.actor || current.actor || "agent",
+    detail: event.kind === "site_alert" ? `${event.data?.url || ""} · ${event.data?.detail || "site failed"}` : current.detail,
     percent, stage, kind: event.kind, updated: Date.now(),
   });
+  if (event.kind === "job_completed" && Number.isFinite(Number(event.data?.daily_calls))) {
+    dailyUsage = { used: Number(event.data.daily_calls), limit: Number(event.data.daily_limit || 0) };
+  }
   render();
 }
 

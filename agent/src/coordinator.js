@@ -322,7 +322,8 @@ export class Coordinator extends Agent {
         };
         this.sql`UPDATE jobs SET status=${"completed"}, compact_json=${JSON.stringify(compact)}, updated_at=${Date.now()} WHERE id=${id}`;
         this.sql`UPDATE agent_versions SET completed_jobs=completed_jobs+1, verifier_runs=verifier_runs+${verifier ? 1 : 0}, confidence_sum=confidence_sum+${Number(primary.result.confidence || 0)} WHERE version=${"0.1.0"}`;
-        await this.log(id, "job_completed", { verifier: !!verifier }, "coordinator");
+        const usage = await this.usageSummary();
+        await this.log(id, "job_completed", { verifier: !!verifier, ai_calls: verifier ? 2 : 1, daily_calls: usage.harness_calls, daily_limit: usage.harness_call_limit, agent_name: packet.agent_name }, "coordinator");
         this.setState({ ...this.state, status: "ready", active_job_id: null });
         return this.getJob(id);
       });
@@ -382,7 +383,8 @@ export class Coordinator extends Agent {
     const compact = { objective: packet.objective, template_id: packet.template_id, agent_name: packet.agent_name, ai_calls: 0, checks };
     this.sql`UPDATE jobs SET status=${"completed"}, compact_json=${JSON.stringify(compact)}, updated_at=${now} WHERE id=${id}`;
     this.sql`UPDATE agent_versions SET completed_jobs=completed_jobs+1 WHERE version=${"0.1.0"}`;
-    await this.log(id, "job_completed", { verifier: false, ai_calls: 0, health_checks: checks.length, failed_checks: checks.filter((item) => !item.healthy).length, agent_name: packet.agent_name }, "coordinator");
+    const usage = await this.usageSummary();
+    await this.log(id, "job_completed", { verifier: false, ai_calls: 0, daily_calls: usage.harness_calls, daily_limit: usage.harness_call_limit, health_checks: checks.length, failed_checks: checks.filter((item) => !item.healthy).length, agent_name: packet.agent_name }, "coordinator");
     this.setState({ ...this.state, status: "ready", active_job_id: null });
     return this.getJob(id);
   }
