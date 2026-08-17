@@ -24,6 +24,7 @@ Cloudflare Ops MCP is made by AMH - Artificial Mind Hive, operated by Service Pr
 - worker/index.js: Cloudflare Worker MCP endpoint.
 - worker/oauth.js: per-user OAuth, hashed connector sessions, refresh, status, and revoke.
 - assets/wt-walrus.png: WT walrus brand mark.
+- PRIVACY.md, TERMS.md, and SECURITY.md: hosted-service data, use, and safety policies.
 - src/: zero-dependency Cloudflare zone fixer library.
 - bin/cfops.js: CLI entry point.
 
@@ -31,3 +32,5 @@ Cloudflare Ops MCP is made by AMH - Artificial Mind Hive, operated by Service Pr
 
 Service Pricer: https://servicepricer.app
 GitHub: https://github.com/pain2hustle/cloudflare-ops-mcp
+AMH GitHub: https://github.com/pain2hustle
+Public AMH-built work: https://nothingunseen.com

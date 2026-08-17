@@ -549,6 +549,9 @@ Made by **-/\-\ M H // WT** — AMH, Artificial Mind Hive, operated by Service P
 
 - Service Pricer: https://servicepricer.app
 - GitHub: https://github.com/pain2hustle/cloudflare-ops-mcp
+- AMH on GitHub: [@pain2hustle](https://github.com/pain2hustle)
+- Public AMH-built work: [Nothing Unseen](https://nothingunseen.com)
+- Project policies: [Privacy](PRIVACY.md) · [Terms](TERMS.md) · [Security](SECURITY.md) · [MIT License](LICENSE)
 
 ## License
 
@@ -556,8 +559,22 @@ MIT (c) 2026 Pain2HuStle
 
 ---
 
+## AMH current endeavor: WT
+
+**WT** is AMH's current operator-safety effort: a guarded agent middle layer connecting Cloudflare Agents, MCP, and Wrangler. The goal is to let capable orchestrators and efficient K2-class or other tool-calling agents inspect, plan, request approval, deploy, verify, and recover—without handing them raw Cloudflare tokens or letting stale agents overwrite newer work.
+
+Watch for the stateful AMH Agent Coordinator, Cache Guardian, Change Guardian, Playwright phone/UI checks, and allowlisted Wrangler doctor, deployment, log, rollback, binding, and storage-health tools. The execution rule stays the same: **check → diff → approve → apply → verify**.
+
 <p align="center">
   <img src="assets/wt-walrus.png" width="180" alt="WT walrus logo">
   <br>
   <code>-/\-\ M H // WT · YOUR CLOUDFLARE STAYS YOURS</code>
 </p>
+
+```text
+     /\        |\    /|      |    |
+    /--\       | \  / |      |----|
+   /    \      |  \/  |      |    |
+
+             A M H  //  W T
+```

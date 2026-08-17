@@ -85,6 +85,8 @@
                   "OAUTH.md",
                   "ROADMAP.md",
                   "SECURITY.md",
+                  "PRIVACY.md",
+                  "TERMS.md",
                   "scripts/oauth-setup.mjs",
                   "scripts/cloudflare-oauth-create.mjs"
               ],
