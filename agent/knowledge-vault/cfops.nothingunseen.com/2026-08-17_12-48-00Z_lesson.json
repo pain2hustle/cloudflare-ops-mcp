@@ -1,0 +1,64 @@
+{
+  "schema_version": "amh.wt.knowledge.v1",
+  "kind": "lesson",
+  "exported_at": "2026-08-17T12:48:00Z",
+  "site": "cfops.nothingunseen.com",
+  "source": "master session 2026-08-17 — v0.4.0 release and first live deploy",
+  "taught_by": "master",
+  "lessons": [
+    {
+      "id": "wrong-account-oauth-wall",
+      "title": "Wrangler OAuth lands on whatever browser session auto-approves — pin the browser before blaming the login",
+      "problem": "Repeated `wrangler login` / `wrangler auth create` attempts kept binding to the wrong Cloudflare account. The consent step never appeared because the DEFAULT browser held a session for a different user, and Cloudflare auto-approves a previously authorized client.",
+      "method": [
+        "Never let wrangler auto-open the browser for account-sensitive auth. Use `--browser=false` and take the printed URL yourself.",
+        "Before authorizing, verify which account the target browser session actually holds: open dash.cloudflare.com and read the account ID in the redirect URL.",
+        "Complete the consent form only where the intended user is logged in, and read the account name on the consent card before clicking Authorize.",
+        "After auth, prove it: `wrangler whoami` must show the expected account ID. An email alone is not proof — one person can hold multiple Cloudflare users.",
+        "Bind the profile to the working directories (`wrangler auth activate <profile> <dir>`) so future deploys cannot silently use the wrong default."
+      ],
+      "signals_it_applies": [
+        "whoami shows a different account than the one owning the target zone",
+        "OAuth completes suspiciously fast with no visible consent screen",
+        "the same login flow was already retried and produced the same wrong account"
+      ],
+      "hard_nos": [
+        "Do not deploy to whatever account is active just because credentials work",
+        "Do not retry the identical login flow expecting a different account",
+        "Do not create a broad master API token as a workaround"
+      ],
+      "evidence": "cloudflare-ops-mcp v0.4.0 deploy, 2026-08-17: two failed same-flow logins, then --browser=false + verified browser session produced the correct account on the first try; live /health confirmed 0.4.0."
+    },
+    {
+      "id": "verify-live-by-fetch",
+      "title": "A deploy is done when the live URL says so, not when the tool exits 0",
+      "problem": "Upload success and exit codes do not prove the public route serves the new version.",
+      "method": [
+        "After deploy, fetch the live health/version endpoint over the public hostname and compare the reported version to the release.",
+        "Exercise one authenticated-failure path to confirm the service fails closed.",
+        "Only then report the deploy as complete, quoting what the live response actually said."
+      ],
+      "hard_nos": [
+        "Do not report success from a build log alone",
+        "Do not test only the workers.dev URL when a custom route is the real front door"
+      ],
+      "evidence": "cfops.nothingunseen.com/health returned version 0.4.0 with the 5 new agent tools; unauthenticated MCP call returned -32001 unauthorized."
+    },
+    {
+      "id": "leak-scan-before-push",
+      "title": "Scan the staged diff for secret patterns before every public push",
+      "problem": "A public repo push distributes everything staged; a stray key in a config or stash file becomes public history.",
+      "method": [
+        "Scan `git diff --cached` for known secret shapes (API keys, bearer tokens, provider prefixes) before committing.",
+        "Keep private operator files under an ignored path and verify the ignore actually excluded them in `git status`.",
+        "Store operator secrets outside the repo and reference their location, never their value."
+      ],
+      "hard_nos": [
+        "Do not commit local-stashes content, even redacted, without explicit review",
+        "Do not paste secret values into commit messages, docs, or vault entries"
+      ],
+      "evidence": "v0.4.0 release: staged-diff pattern scan clean; operator.json confirmed ignored; secret values live only in ~/.amh-secrets and Worker secret bindings."
+    }
+  ],
+  "note": "Redacted lesson entry. No OAuth records, connector keys, secret values, raw source bodies, client IPs, or cookies."
+}
