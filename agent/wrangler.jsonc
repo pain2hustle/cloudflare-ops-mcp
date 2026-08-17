@@ -1,0 +1,42 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "amh-wt-agent-harness",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-17",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "observability": { "enabled": true },
+  "ai": { "binding": "AI" },
+  "browser": { "binding": "BROWSER" },
+  "send_email": [
+    { "name": "EMAIL" }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "COORDINATORS", "class_name": "Coordinator" },
+      { "name": "EMAIL_VERIFIERS", "class_name": "EmailVerifier" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Coordinator"] },
+    { "tag": "v2", "new_sqlite_classes": ["EmailVerifier"] }
+  ],
+  "vars": {
+    "MODEL_PROFILE": "free",
+    "PRIMARY_MODEL": "@cf/moonshotai/kimi-k2.6",
+    "FALLBACK_MODEL": "@cf/zai-org/glm-4.7-flash",
+    "FREE_PRIMARY_MODEL": "@cf/zai-org/glm-4.7-flash",
+    "FREE_VERIFIER_MODEL": "@cf/google/gemma-4-26b-a4b-it",
+    "MAX_URLS": "4",
+    "MAX_SOURCE_CHARS": "6000",
+    "MAX_AUTO_FOLLOWUPS": "1",
+    "MAX_BROWSER_CALLS": "1",
+    "MAX_DAILY_MODEL_CALLS": "8",
+    "MAX_SCHEDULES": "3",
+    "MIN_SCHEDULE_MINUTES": "60",
+    "RETAIN_SOURCE_DAYS": "4",
+    "RETAIN_DETAIL_DAYS": "7",
+    "RETAIN_EVENT_DAYS": "30",
+    "MAX_DETAIL_BYTES": "5242880"
+  }
+}

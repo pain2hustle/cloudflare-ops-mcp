@@ -3,7 +3,7 @@
     "name":  "io.github.pain2hustle/cloudflare-ops-mcp",
     "title":  "AMH Cloudflare Ops MCP by WT",
     "description":  "OAuth-first Cloudflare Ops MCP with isolated per-user Cloudflare connections and approval-gated DNS, Email Routing, DMARC/SPF/BIMI, Pages, cache, and Turnstile tools.",
-    "version":  "0.3.0",
+    "version":  "0.4.0",
     "repository":  {
                        "url":  "https://github.com/pain2hustle/cloudflare-ops-mcp",
                        "source":  "github"
@@ -26,7 +26,7 @@
                      {
                          "registryType":  "npm",
                          "identifier":  "cloudflare-ops-mcp",
-                         "version":  "0.3.0",
+                         "version":  "0.4.0",
                          "transport":  {
                                            "type":  "stdio"
                                        },

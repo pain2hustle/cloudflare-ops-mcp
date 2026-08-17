@@ -1,7 +1,7 @@
 {
     "name":  "cloudflare-ops-mcp",
-    "version":  "0.3.0",
-    "description":  "-/\\-\\ M H // WT — OAuth-first Cloudflare Ops MCP with isolated per-user connections, DNS, Email Routing, DMARC, BIMI, Pages, cache, Turnstile, and dry-run fixes.",
+    "version":  "0.4.0",
+    "description":  "-/\\-\\ M H // WT — OAuth-first Cloudflare Ops MCP with isolated per-user connections, DNS, Email Routing, DMARC, BIMI, Pages, cache, Turnstile, dry-run fixes, and a bounded AMH WT agent harness for delegated research, verification, and site-health jobs.",
     "type":  "module",
     "main":  "src/index.js",
     "exports":  {

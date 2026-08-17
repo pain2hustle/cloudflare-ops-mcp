@@ -1,0 +1,21 @@
+{
+  "name": "@amh/wt-agent-harness",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "dry-run": "wrangler deploy --dry-run",
+    "watch": "node scripts/watch.mjs",
+    "watch:pipe": "wrangler tail amh-wt-agent-harness --format json | node scripts/watch.mjs",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@cloudflare/playwright": "^1.3.0",
+    "agents": "^0.20.1"
+  },
+  "devDependencies": {
+    "wrangler": "^4.120.1"
+  }
+}

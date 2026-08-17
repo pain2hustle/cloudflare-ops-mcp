@@ -11,6 +11,9 @@
   ],
   "kv_namespaces": [
     { "binding": "CLOUDFLARE_OPS_OAUTH", "id": "1854b6d5bc8c4860bc914412443a0172" }
+  ],
+  "services": [
+    { "binding": "AGENT_HARNESS", "service": "amh-wt-agent-harness" }
   ]
   // OAuth secrets for hosted connectors:
   //   npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_ID

@@ -40,7 +40,7 @@ import {
 const SERVER = {
   name: "cloudflare-ops-mcp",
   title: "AMH Cloudflare Ops MCP by WT",
-  version: "0.3.0",
+  version: "0.4.0",
 };
 const PROTOCOL_FALLBACK = "2025-06-18";
 
@@ -280,10 +280,83 @@ const TOOLS = [
       required: ["account_id", "project"],
     },
   },
+  {
+    name: "agent_research_start",
+    description: "Delegate a bounded research, verification, zero-AI site-health, UI, Cloudflare diagnosis, inventory, data review, missed-items, or revision-proposal job to the private AMH WT coordinator. Returns immediately with job and memory hashes; the configured free lane or explicitly enabled paid K2 lane runs durably in the background.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        agent_name: { type: "string", description: "Friendly reusable name shown in the console, terminal, logs, and handoffs." },
+        template_id: { type: "string", enum: ["web_research", "secondary_dive", "citation_verify", "ui_playwright", "site_health", "cloudflare_diagnose", "cloudflare_inventory", "data_query_review", "config_compare", "missed_items", "revision_proposal"] },
+        objective: { type: "string", description: "Exact bounded task and evidence required." },
+        allowed_domains: { type: "array", items: { type: "string" }, description: "Explicit domains the crawler may access." },
+        urls: { type: "array", items: { type: "string" }, description: "HTTPS seed URLs inside the allowlist." },
+        context: { type: "string", description: "Only compact relevant context; never secrets." },
+        expected_text: { type: "string", description: "Optional short marker required by the zero-AI site-health check to catch a 200 response serving the wrong page." },
+        schedule: { type: "object", properties: { enabled: { type: "boolean" }, every_minutes: { type: "number" } } },
+      },
+      required: ["template_id", "objective"],
+    },
+  },
+  {
+    name: "agent_research_status",
+    description: "Read one delegated job, including its redacted timeline, sources, primary result, independent verifier result, gaps, and candidate revisions.",
+    inputSchema: { type: "object", properties: { job_id: { type: "string" } }, required: ["job_id"] },
+  },
+  {
+    name: "agent_research_list",
+    description: "List recent delegated jobs for this authenticated user. Read-only and tenant-isolated.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "agent_briefing",
+    description: "Return the Continuity Keeper's current compact project briefing and memory hash: active platform, target, blocker, keep/archive/drop guidance, and next safe step.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "agent_control",
+    description: "Safely pause or resume new agent work, cancel a queued/running job at its next phase boundary, force read-only mode, or run retention cleanup. Models cannot disable read-only mode.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        action: { type: "string", enum: ["pause", "resume", "cancel_job", "readonly_on", "retention_sweep"] },
+        job_id: { type: "string", description: "Required for cancel_job." },
+      },
+      required: ["action"],
+    },
+  },
 ];
 
 // ── Tool implementations (each returns a plain object; serialized as text) ──
+const HARNESS_TOOLS = new Set(["agent_research_start", "agent_research_status", "agent_research_list", "agent_briefing", "agent_control"]);
+
+async function runHarnessTool(name, args, env, authContext) {
+  if (!env.AGENT_HARNESS || !env.HARNESS_INTERNAL_KEY) return { error: "The private AMH WT agent harness is not configured on this deployment." };
+  const actor = authContext?.connectionId || (authContext?.mode === "admin" ? "private-admin" : "unknown");
+  const routes = {
+    agent_research_start: { method: "POST", path: "/internal/jobs", body: args },
+    agent_research_status: { method: "GET", path: `/internal/jobs/${encodeURIComponent(String(args.job_id || ""))}` },
+    agent_research_list: { method: "GET", path: "/internal/jobs" },
+    agent_briefing: { method: "GET", path: "/internal/briefing" },
+    agent_control: { method: "POST", path: "/internal/control", body: args },
+  };
+  const route = routes[name];
+  if (name === "agent_research_status" && !String(args.job_id || "").trim()) return { error: "job_id is required" };
+  const response = await env.AGENT_HARNESS.fetch(`https://amh-wt.internal${route.path}`, {
+    method: route.method,
+    headers: {
+      "content-type": "application/json",
+      "x-amh-internal-key": env.HARNESS_INTERNAL_KEY,
+      "x-amh-actor": actor,
+    },
+    body: route.body ? JSON.stringify(route.body) : undefined,
+  });
+  const output = await response.json().catch(() => ({ error: `Harness returned HTTP ${response.status}` }));
+  return response.ok ? output : { error: output.error || `Harness returned HTTP ${response.status}` };
+}
+
 async function runTool(name, args, env, authContext) {
+  if (HARNESS_TOOLS.has(name)) return runHarnessTool(name, args, env, authContext);
   // OAuth callers are bound to their authenticated connection. Only the private
   // legacy admin key may select a legacy tenant or use the fallback Worker token.
   const legacyTenant = authContext?.mode === "admin" ? String(args.tenant || "default").trim() || "default" : "default";

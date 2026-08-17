@@ -1,4 +1,6 @@
 .env
+agent/local-stashes/**
+!agent/local-stashes/README.md
 .env.local
 node_modules
 *.log
