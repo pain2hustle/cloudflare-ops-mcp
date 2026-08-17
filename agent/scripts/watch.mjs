@@ -74,7 +74,10 @@ function render() {
   process.stdout.write("\x1b[2J\x1b[H");
   console.log("\x1b[1;32mAGENTS RUNNING\x1b[0m");
   console.log("\x1b[90mLive tasks · secrets/IPs are redacted\x1b[0m\n");
-  const values = [...jobs.values()].sort((a, b) => b.updated - a.updated);
+  // Currents at top: running work first, finished/failed sink below.
+  const done = new Set(["job_completed", "job_failed", "job_cancelled"]);
+  const values = [...jobs.values()].sort((a, b) =>
+    (done.has(a.kind) ? 1 : 0) - (done.has(b.kind) ? 1 : 0) || b.updated - a.updated);
   if (!values.length) console.log("\x1b[90mWaiting for agent events…\x1b[0m");
   for (const job of values.slice(0, 14)) {
     const color = job.kind === "job_failed" ? 31 : job.kind === "job_completed" ? 32 : job.kind === "job_cancelled" ? 33 : 36;
