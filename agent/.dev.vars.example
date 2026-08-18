@@ -1,0 +1,16 @@
+# Examples only. Put real production values into Wrangler secrets, never Git.
+HARNESS_ACCESS_KEY=generate_a_long_random_console_key
+SESSION_SIGNING_KEY=generate_at_least_32_random_bytes
+HARNESS_INTERNAL_KEY=use_the_same_secret_on_the_core_worker
+AUDIT_HMAC_KEY=generate_a_separate_long_random_key
+
+# Optional transactional alerts. Email Sending/verified destinations must be onboarded.
+ALERT_FROM=alerts@your-cloudflare-email-domain.example
+ALERT_TO=your-verified-destination@example.com
+ALERT_LOOPBACK_TO=mailcheck@your-cloudflare-email-domain.example
+# ALERT_WEBHOOK_URL=https://private-webhook.example/hooks/...
+
+# Optional Turnstile login gate.
+# TURNSTILE_SITEKEY=...
+# TURNSTILE_SECRET=...
+# TURNSTILE_HOSTNAMES=agent-console.example.com

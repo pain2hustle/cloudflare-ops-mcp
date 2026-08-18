@@ -8,6 +8,7 @@ cfopser-audit.log
 # wrangler secrets / build artifacts (never commit a token)
 .dev.vars
 .dev.vars.*
+!agent/.dev.vars.example
 worker/.dev.vars
 .wrangler/
 dist/

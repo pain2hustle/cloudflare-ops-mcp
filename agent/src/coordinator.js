@@ -5,6 +5,8 @@ import { runModel } from "./model.js";
 import { PERSONAL_ASSISTANT, TEMPLATES, suggestAgentName } from "./templates.js";
 import { landingGuide } from "./safetry.js";
 import { auditDigest } from "./crypto.js";
+import { CLOUDFLARE_MCP_SERVERS } from "./mcp-catalog.js";
+import { evaluateHealthSource } from "./health.js";
 
 const DEFAULT_MEMORY = Object.freeze({
   active_platform: "Cloudflare Workers",
@@ -221,6 +223,32 @@ export class Coordinator extends Agent {
     return rowList(this.sql`SELECT * FROM agent_profiles WHERE active=1 ORDER BY system DESC, updated_at DESC`).map((row) => this.profileRow(row));
   }
 
+  async connectCloudflareMcp(id, callbackHost, actor = "console") {
+    const config = CLOUDFLARE_MCP_SERVERS[id];
+    if (!config) throw new Error("Unknown Cloudflare MCP connector");
+    const host = new URL(callbackHost);
+    if (host.protocol !== "https:" && host.hostname !== "127.0.0.1" && host.hostname !== "localhost") throw new Error("MCP OAuth callback host must use HTTPS");
+    const result = await this.addMcpServer(config.name, config.url, { id, callbackHost: host.origin, transport: { type: "streamable-http" } });
+    await this.log(null, "cloudflare_mcp_connection", { connector_id: id, name: config.name, state: result.state }, actor);
+    return { id: result.id, state: result.state, auth_url: result.state === "authenticating" ? result.authUrl : null };
+  }
+
+  async cloudflareMcpStatus() {
+    const state = this.getMcpServers();
+    const servers = Object.entries(state.servers || {}).filter(([id]) => CLOUDFLARE_MCP_SERVERS[id]).map(([id, server]) => ({
+      id, name: server.name, server_url: server.server_url, state: server.state,
+    }));
+    const tools = (state.tools || []).filter((tool) => CLOUDFLARE_MCP_SERVERS[tool.serverId]).map((tool) => ({ server_id: tool.serverId, name: tool.name, description: cleanText(tool.description, 300) }));
+    return { servers, tools, note: "Connections and OAuth tokens are isolated in this user's Durable Object. Tool promotion remains SafeTry-gated." };
+  }
+
+  async disconnectCloudflareMcp(id, actor = "console") {
+    if (!CLOUDFLARE_MCP_SERVERS[id]) throw new Error("Unknown Cloudflare MCP connector");
+    await this.removeMcpServer(id);
+    await this.log(null, "cloudflare_mcp_disconnected", { connector_id: id }, actor);
+    return { id, removed: true };
+  }
+
   async renameAgentProfile(id, name, actor = "console") {
     const nextName = cleanText(name, 80);
     if (nextName.length < 2) throw new Error("Agent name must be at least 2 characters");
@@ -358,27 +386,25 @@ export class Coordinator extends Agent {
     const now = Date.now();
     const checks = [];
     for (const source of sources) {
-      const textMatch = !packet.expected_text || String(source.text || "").toLowerCase().includes(packet.expected_text.toLowerCase());
-      const healthy = !!source.ok && Number(source.status) >= 200 && Number(source.status) < 300 && textMatch;
-      const detail = healthy ? "HTTP reachable" : (source.error || (!textMatch ? `Expected text not found: ${packet.expected_text}` : `Unexpected status ${source.status || "unknown"}`));
+      const { healthy, detail } = evaluateHealthSource(source, packet.expected_text);
       const previous = rowList(this.sql`SELECT * FROM monitor_states WHERE url=${source.url} LIMIT 1`)[0];
       const nextState = healthy ? "up" : "down";
       const changed = !previous || previous.state !== nextState;
       const reminderDue = !healthy && previous && now - Number(previous.last_alert_at || 0) >= 86400000;
       const firstSeen = changed ? now : Number(previous?.first_seen_at || now);
       if (previous) {
-        this.sql`UPDATE monitor_states SET state=${nextState}, status_code=${source.status || null}, detail=${detail}, first_seen_at=${firstSeen}, changed_at=${changed ? now : previous.changed_at}, checked_at=${now}, last_alert_at=${(changed || reminderDue) ? now : previous.last_alert_at} WHERE url=${source.url}`;
+        this.sql`UPDATE monitor_states SET state=${nextState}, status_code=${source.status ?? null}, detail=${detail}, first_seen_at=${firstSeen}, changed_at=${changed ? now : previous.changed_at}, checked_at=${now}, last_alert_at=${(changed || reminderDue) ? now : previous.last_alert_at} WHERE url=${source.url}`;
       } else {
         this.sql`INSERT INTO monitor_states (url,state,status_code,detail,first_seen_at,changed_at,checked_at,last_alert_at)
-          VALUES (${source.url},${nextState},${source.status || null},${detail},${now},${now},${now},${healthy ? null : now})`;
+          VALUES (${source.url},${nextState},${source.status ?? null},${detail},${now},${now},${now},${healthy ? null : now})`;
       }
       const event = healthy ? (previous?.state === "down" ? "site_recovered" : "site_healthy") : "site_alert";
       if (changed || reminderDue || !previous) {
-        const alert = { url: source.url, state: nextState, status: source.status || null, detail, first_seen_at: new Date(firstSeen).toISOString(), agent_name: packet.agent_name, template_title: packet.template_title };
+        const alert = { url: source.url, state: nextState, status: source.status ?? null, detail, first_seen_at: new Date(firstSeen).toISOString(), agent_name: packet.agent_name, template_title: packet.template_title };
         await this.log(id, event, alert, packet.agent_name);
         if (event !== "site_healthy") await this.sendAlert(event, alert, id);
       }
-      checks.push({ url: source.url, healthy, status: source.status || null, detail, changed });
+      checks.push({ url: source.url, healthy, status: source.status ?? null, detail, changed });
     }
     const compact = { objective: packet.objective, template_id: packet.template_id, agent_name: packet.agent_name, ai_calls: 0, checks };
     this.sql`UPDATE jobs SET status=${"completed"}, compact_json=${JSON.stringify(compact)}, updated_at=${now} WHERE id=${id}`;

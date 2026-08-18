@@ -1,7 +1,7 @@
 {
   "name": "cloudflare-ops-mcp",
   "version": "0.4.0",
-  "description": "-/\\-\\ M H // WT — the bridge from K2 agents through Wrangler to your master AI. Delegate bounded tasks, verify, approve once, ship on Cloudflare. SafeTry security-audit agent, self-catching mail tests, live console, lesson vault, audit chain. Extras: DNS, DMARC/SPF/BIMI, Email Routing, Pages, cache, Turnstile.",
+  "description": "AMH WT Cloudflare Ops MCP v0.4: OAuth-isolated Cloudflare tools plus a private SafeTry Agent Harness for bounded research, independent verification, deterministic health checks, schedules, audit, live operator console, and verified deploy gates across DNS, email, Pages, cache, Turnstile, Wrangler, and official Cloudflare MCP connectors.",
   "type": "module",
   "main": "src/index.js",
   "exports": {
@@ -22,7 +22,10 @@
     "oauth:setup": "node scripts/oauth-setup.mjs",
     "worker:set-oauth": "cd worker && npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_ID && npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_SECRET && npx wrangler secret put CLOUDFLARE_OAUTH_REDIRECT_URI",
     "oauth:create": "node scripts/cloudflare-oauth-create.mjs",
-    "oauth:create:deploy": "node scripts/cloudflare-oauth-create.mjs %CLOUDFLARE_ACCOUNT_ID% %CLOUDFLARE_OPS_WORKER_ORIGIN% --deploy"
+    "oauth:create:deploy": "node scripts/cloudflare-oauth-create.mjs %CLOUDFLARE_ACCOUNT_ID% %CLOUDFLARE_OPS_WORKER_ORIGIN% --deploy",
+    "verify:live": "node scripts/verify-live.mjs",
+    "worker:deploy:verified": "node scripts/deploy-verified.mjs --dir worker --url https://cfops.nothingunseen.com/?format=json --expect 0.4.0",
+    "agent:deploy:verified": "node scripts/deploy-verified.mjs --dir agent --url auto --path /health --expect 0.1.0"
   },
   "engines": {
     "node": ">=18"
@@ -73,6 +76,7 @@
     "worker/index.js",
     "worker/oauth.js",
     "assets/wt-walrus.png",
+    "assets/WT WALRUS TOOTH.png",
     "worker/wrangler.jsonc",
     "README.md",
     "MCP.md",
@@ -88,7 +92,20 @@
     "PRIVACY.md",
     "TERMS.md",
     "scripts/oauth-setup.mjs",
-    "scripts/cloudflare-oauth-create.mjs"
+    "scripts/cloudflare-oauth-create.mjs",
+    "scripts/verify-live.mjs",
+    "scripts/deploy-verified.mjs",
+    "AGENT-HARNESS.md",
+    "CLOUDFLARE-MCP.md",
+    "GIT-INTEGRATION.md",
+    "MAIL-LANDING-GUIDE.md",
+    "RELEASE-GATE.md",
+    "agent/package.json",
+    "agent/wrangler.jsonc",
+    "agent/.dev.vars.example",
+    "agent/src",
+    "agent/scripts/watch.mjs",
+    "agent/knowledge-vault/README.md"
   ],
   "mcpName": "io.github.pain2hustle/cloudflare-ops-mcp",
   "funding": {

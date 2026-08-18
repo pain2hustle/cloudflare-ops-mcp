@@ -6,6 +6,7 @@ Cloudflare Ops MCP is designed for bring-your-own Cloudflare credentials.
 
 - Do not commit real Cloudflare API tokens, Global API Keys, MCP access keys, `.env` files, `.dev.vars` files, Wrangler output, or audit logs.
 - Do not paste tokens into GitHub issues, chat logs, screenshots, or support requests.
+- Do not publish AMH/customer repair playbooks, learned policy packs, task memory, or proprietary scoring logic. Keep the public engine generic and private policy/data in access-controlled storage or repositories.
 - Use scoped Cloudflare API tokens, not Global API Keys.
 - Scope tokens to the exact zone(s) you manage.
 - Store local tokens in your own shell environment or ignored `.env` file.

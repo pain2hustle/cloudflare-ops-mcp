@@ -19,7 +19,7 @@ async function fetchPage(url, maxChars) {
   if (response.status >= 300 && response.status < 400) return { ok: false, status: response.status, needsBrowser: true, error: `redirect ${response.status}`, location: response.headers.get("location") || null };
   if (!response.ok) return { ok: false, status: response.status, needsBrowser: response.status === 403, error: `HTTP ${response.status}` };
   const type = response.headers.get("content-type") || "";
-  if (!/text|json|xml|html/i.test(type)) return { ok: false, needsBrowser: false, error: `unsupported content-type ${type}` };
+  if (!/text|json|xml|html/i.test(type)) return { ok: false, status: response.status, needsBrowser: false, error: `unsupported content-type ${type}` };
   const raw = (await response.text()).slice(0, maxChars * 4);
   const text = /<body|<main|<article|<!doctype/i.test(raw) ? stripHtml(raw) : raw.replace(/\s+/g, " ").trim();
   return { ok: text.length > 180, status: response.status, needsBrowser: text.length <= 180, title: "", text: cleanText(text, maxChars), method: "fetch" };

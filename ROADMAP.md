@@ -12,17 +12,30 @@ Cloudflare Ops MCP's direction is simple: make Cloudflare operations safe enough
 - More DNS recipes: Google Search Console verification, Microsoft 365 mail, Google Workspace mail, Resend, Stripe, and common SaaS verification records.
 - Tenant-scoped durable audit logs and signed approval receipts. Per-user OAuth isolation and hashed connector sessions shipped in v0.3.0.
 
-## Proposed v0.4 Wrangler + browser tool pack
+## Shipped in v0.4
+
+- Private AMH WT Agent Harness connected to the public MCP Worker through the `AGENT_HARNESS` service binding; the delegated-job tools do not hand models a generic shell or raw Cloudflare credential.
+- Friendly reusable agent profiles, including Jack as the default office-manager profile, with bounded task templates, independent verification where configured, schedules, live redacted events, compact continuity briefing, retention controls, and candidate revisions that never self-apply.
+- SafeTry preflight guidance, read-only default, explicit human control boundaries, per-user Durable Object isolation, and a tamper-evident audit chain.
+- Deterministic zero-AI `site_health` checks based on explicit 2xx status plus an optional expected marker. Site-health checks deliberately do not invoke Playwright.
+- Verified deployment scripts that reject redirects, require a public 2xx response, and optionally require an expected release marker before reporting success.
+- Self-catching email loopback guidance and evidence collection without claiming that a test proves placement in a mailbox provider's inbox tab.
+- Optional OAuth connections to the official Cloudflare API, Workers Builds, Bindings, Observability, and Docs MCP servers.
+- Branded authenticated desktop/phone operator console and terminal event watcher for jobs, agent handoffs, schedules, controls, alert acceptance, budgets, and recorded model-call counts.
+
+These are shipped repository capabilities. Each optional connector, alert channel, public hostname, and private harness deployment still requires operator configuration and verification.
+
+## Future allowlisted Wrangler and storage operations
 
 - `wrangler_doctor`: read-only account, auth profile, config, compatibility date, route, binding, and required-secret-name checks.
 - `list_deployments` and `deployment_diff`: show current and previous Worker versions without changing production.
-- `rollback_deployment`: explicit version plus dry-run/approval gate before Wrangler rollback.
+- `rollback_deployment`: explicit immutable version plus dry-run, approval receipt, and post-rollback verification.
 - `tail_worker_errors`: bounded, redacted structured logs—never an open-ended shell.
 - `audit_bindings` and `audit_secret_names`: compare Wrangler config with deployed bindings; report secret names only, never values.
 - `check_routes_domains`: catch the wrong-account, wrong-zone, or missing custom-domain problem before deploy.
 - `kv_health`, `d1_health`, and `r2_health`: bounded read-only resource and binding checks.
 - Cloudflare Workers runtime integration tests with `@cloudflare/vitest-pool-workers`.
-- A thin Playwright suite for the landing page, phone viewport, OAuth redirect, one-time connector screen, copy buttons, status, and revoke UI. Real Cloudflare login and 2FA remain manual.
+- Expanded Playwright release coverage; real Cloudflare login, GitHub authorization, and 2FA remain manual.
 
 Do not expose a generic `wrangler_run` or arbitrary shell tool. Every operation should be allowlisted, schema-validated, redacted, and read-only or dry-run unless the user explicitly approves a narrowly scoped mutation.
 

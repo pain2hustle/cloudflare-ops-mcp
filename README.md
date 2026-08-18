@@ -4,18 +4,31 @@
 
 <p align="center"><code>-/\-\ M H // WT</code></p>
 
+<p align="center"><sub><strong>WT WALRUS TOOTH</strong></sub></p>
+
 # AMH Cloudflare Ops MCP by WT
 
-**OAuth-first Cloudflare operations for AI agents—DNS, DMARC, BIMI, SPF, Email Routing, Pages, cache, Turnstile, and Wrangler, with isolated per-user connections and dry-run writes.**
+**An approval-gated Cloudflare operations suite with an optional private Agent Harness: bounded delegation, deterministic verification, OAuth-isolated MCP tools, and verified deploy checks without handing agents raw account credentials.**
+
+- **Private Agent Harness:** Jack-friendly reusable agent profiles, bounded research and independent verification, automatic schedules, compact continuity briefings, and a live operator console for jobs, handoffs, limits, and redacted logs.
+- **SafeTry controls:** read-only defaults, explicit approvals, narrow adapters instead of a generic shell, tenant isolation, retention limits, and a tamper-evident audit chain.
+- **Verified deploy gate:** checks the public target for an explicit 2xx status, rejects redirects, and optionally requires an expected release marker before reporting success.
+- **Deterministic site health:** zero-AI HTTP checks remain useful for small valid pages and can require an expected text marker to catch a 200 response serving the wrong site.
+- **Self-catching email loopback:** exercises the configured sending/routing path and records delivery evidence; it does not claim to prove placement in a provider's inbox tab.
+- **Cloudflare-native connections:** optional OAuth connectors for the official Cloudflare API, Workers Builds, Bindings, Observability, and Docs MCP services, plus Wrangler-based Worker deployment and secrets.
+- **Guarded operations:** Turnstile, DNS, SPF/DMARC/BIMI, Email Routing, Pages cutovers, cache purge, scoped tokens, and account diagnostics stay dry-run or approval-gated where they write.
 
 Cloudflare Ops MCP scans Cloudflare configuration, computes a **diff** of desired vs current **DNS / Email Routing / BIMI / DMARC / SPF / Pages / cache / Turnstile** setup, and **applies fixes only after explicit approval**. It is built for people who want an AI agent to help with Cloudflare safely: scan first, show the plan, then write only when the owner approves.
 
-Version 0.4.0 works four ways:
+Version 0.4.0 works five ways:
 
 - **CLI**: run `cfops` locally with a scoped Cloudflare token.
 - **Library**: import the zero-dependency engine into your own app.
 - **Hosted OAuth MCP**: connect your own Cloudflare account and receive a one-user `cfops_` connector key. The owner's API token is never shared.
 - **Self-hosted MCP Worker**: deploy the included Worker with Wrangler for your own team or infrastructure.
+- **Private Agent Harness**: deploy the companion `agent/` Worker behind the MCP Worker's `AGENT_HARNESS` service binding for bounded jobs, health watches, schedules, audit, and the authenticated operator console.
+
+For repository-connected deployments, see [GIT-INTEGRATION.md](GIT-INTEGRATION.md). The recommended route uses Cloudflare Workers Builds' GitHub App authorization; the MCP does not store a GitHub token.
 
 Cloudflare Ops MCP is especially useful for Cloudflare operators who need repeatable DNS hygiene across many zones: SPF cleanup, DMARC enforcement, BIMI records, MX checks, DKIM discovery, Cloudflare Email Routing, TXT verification records, safe DNS upserts, and audit logs for every approved write.
 
@@ -194,7 +207,7 @@ Apply exactly the change I just approved, then verify the live result.
 
 The agent chooses the appropriate MCP tool from its schema. Read-only calls run immediately. Mutation tools return a dry-run diff unless the caller explicitly sends `apply: true`; users should approve only after reading that diff.
 
-Current v0.4 tools cover DNS, email authentication/routing, Pages cutover, cache purge, Turnstile, token operations, and account diagnostics — plus the new **AMH WT Agent Harness** (`agent/`): a private companion Worker that runs bounded, delegated research/verification/site-health jobs behind the MCP. The harness ships a Durable Object coordinator with a tamper-evident audit chain, a Continuity Keeper briefing (keep / archive / drop / reload-by-ID memory layers with automatic 4/7/30-day retention), SafeTry capability lanes (read / plan / approval-required / blocked — no raw shell, no secret exposure), guided templates for small K2-class worker models with an independent verifier pass, versioned agent profiles with friendly names and scorecards, candidate revision proposals that never self-apply, an authenticated web console with live progress bars, and a read-only terminal watcher (`npm run watch` in `agent/`). MCP tools `agent_research_start`, `agent_research_status`, `agent_research_list`, `agent_briefing`, and `agent_control` reach it over a private service binding. Remaining roadmap items live in [ROADMAP.md](ROADMAP.md).
+Current v0.4 tools cover DNS, email authentication/routing, Pages cutover, cache purge, Turnstile, token operations, and account diagnostics — plus the **AMH WT Agent Harness** (`agent/`): a private companion Worker for bounded research, verification, UI checks, and zero-AI site-health watches. One Durable Object per user keeps a tamper-evident audit chain, friendly reusable agent profiles (Jack is the default office manager), a Continuity Keeper briefing with automatic 4/7/30-day retention, daily model-call limits, schedules, and candidate revisions that never self-apply. The default Free profile uses `@cf/zai-org/glm-4.7-flash` with independent `@cf/google/gemma-4-26b-a4b-it` verification; `@cf/moonshotai/kimi-k2.6` is labeled and enabled only as an explicit Workers Paid profile. The authenticated console and optional terminal show live handoffs, names, limits, alerts, and exact recorded model calls without spending another inference. Official Cloudflare API, Workers Builds, Bindings, Observability, and Docs MCP connectors use each operator's own OAuth grant. See [AGENT-HARNESS.md](AGENT-HARNESS.md), [CLOUDFLARE-MCP.md](CLOUDFLARE-MCP.md), [MAIL-LANDING-GUIDE.md](MAIL-LANDING-GUIDE.md), and [RELEASE-GATE.md](RELEASE-GATE.md).
 
 ## Install
 
@@ -550,6 +563,7 @@ Made by **-/\-\ M H // WT** — AMH, Artificial Mind Hive, operated by Service P
 - Service Pricer: https://servicepricer.app
 - GitHub: https://github.com/pain2hustle/cloudflare-ops-mcp
 - AMH on GitHub: [@pain2hustle](https://github.com/pain2hustle)
+- Artificial Mind Hive: [amhsiterevival.com](https://www.amhsiterevival.com/)
 - Public AMH-built work: [Nothing Unseen](https://nothingunseen.com)
 - Project policies: [Privacy](PRIVACY.md) · [Terms](TERMS.md) · [Security](SECURITY.md) · [MIT License](LICENSE)
 
@@ -561,7 +575,7 @@ MIT (c) 2026 Pain2HuStle
 
 ## AMH current endeavor: WT
 
-**WT** is AMH's current operator-safety effort: a guarded agent middle layer connecting Cloudflare Agents, MCP, and Wrangler. The goal is to let capable orchestrators and efficient K2-class or other tool-calling agents inspect, plan, request approval, deploy, verify, and recover—without handing them raw Cloudflare tokens or letting stale agents overwrite newer work.
+**WT** is AMH's current operator-safety effort: a guarded agent middle layer connecting Cloudflare Agents, MCP, and Wrangler. The goal is to let capable orchestrators and correctly labeled free or paid tool-calling agents inspect, plan, request approval, deploy, verify, and recover—without handing them raw Cloudflare tokens or letting stale agents overwrite newer work.
 
 Watch for the stateful AMH Agent Coordinator, Cache Guardian, Change Guardian, Playwright phone/UI checks, and allowlisted Wrangler doctor, deployment, log, rollback, binding, and storage-health tools. The execution rule stays the same: **check → diff → approve → apply → verify**.
 

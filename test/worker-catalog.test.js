@@ -6,7 +6,7 @@ test("worker GET advertises broad Cloudflare Ops tool catalog", async () => {
   const res = await worker.fetch(new Request("https://example.test/"), {});
   assert.equal(res.status, 200);
   const body = await res.json();
-  assert.equal(body.server.title, "AMH Cloudflare Ops MCP by WT");
+  assert.equal(body.server.title, "AMH WT Cloudflare Ops MCP — SafeTry Agent Harness");
   for (const tool of [
     "scan_zone",
     "apply_dns_record",

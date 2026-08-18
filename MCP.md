@@ -49,6 +49,38 @@ This key is not a Cloudflare API token. The Cloudflare OAuth grant remains serve
 
 Every mutating tool is dry-run by default. Read the returned diff, then pass `apply: true` only after the account owner approves it.
 
+## Version 0.4 private Agent Harness
+
+Version 0.4 can delegate bounded work to the companion Agent Harness through five MCP tools:
+
+- `agent_research_start` starts a bounded template job, including zero-AI `site_health` checks.
+- `agent_research_status` returns one job's redacted sources, timeline, primary result, and independent verifier result.
+- `agent_research_list` lists recent tenant-isolated jobs.
+- `agent_briefing` returns the Continuity Keeper's compact current briefing and memory hash.
+- `agent_control` pauses/resumes work, requests cancellation, forces read-only mode, or runs retention cleanup. Models cannot disable read-only mode.
+
+Start a bounded job:
+
+```json
+{"name":"agent_research_start","arguments":{"agent_name":"Jack","template_id":"site_health","objective":"Verify the release endpoint","allowed_domains":["example.com"],"urls":["https://example.com/health"],"expected_text":"0.4.0"}}
+```
+
+Read status or recent jobs:
+
+```json
+{"name":"agent_research_status","arguments":{"job_id":"JOB_ID"}}
+{"name":"agent_research_list","arguments":{}}
+```
+
+Read the compact briefing or pause new work:
+
+```json
+{"name":"agent_briefing","arguments":{}}
+{"name":"agent_control","arguments":{"action":"pause"}}
+```
+
+These tools are available only when the MCP Worker has the private `AGENT_HARNESS` service binding and matching `HARNESS_INTERNAL_KEY`. They call the harness over the binding, not a public harness URL. The service binding does not expose the Agent Harness console publicly; console access remains separately authenticated and should be restricted to its intended operators.
+
 ## Self-host with Wrangler
 
 ```sh
