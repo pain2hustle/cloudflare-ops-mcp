@@ -10,6 +10,12 @@ ALERT_TO=your-verified-destination@example.com
 ALERT_LOOPBACK_TO=mailcheck@your-cloudflare-email-domain.example
 # ALERT_WEBHOOK_URL=https://private-webhook.example/hooks/...
 
+# Optional centralized sender fallback for loopback addresses that Cloudflare
+# Email Sending refuses until they are verified. Keep all three as secrets.
+# MAIL_GATEWAY_URL=https://your-private-mail-gateway.example/
+# MAIL_APP_TOKEN=scoped_per_app_gateway_token
+# MAIL_FROM=Mail Check <noreply@your-verified-sender.example>
+
 # Optional Turnstile login gate.
 # TURNSTILE_SITEKEY=...
 # TURNSTILE_SECRET=...

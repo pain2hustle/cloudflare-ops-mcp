@@ -113,26 +113,62 @@ async function emailVerifier(env) {
   return getAgentByName(env.EMAIL_VERIFIERS, "loopback");
 }
 
+async function sendLoopbackMessage(env, message) {
+  let cloudflareError = null;
+  if (env.EMAIL && env.ALERT_FROM) {
+    try {
+      await env.EMAIL.send({
+        to: env.ALERT_LOOPBACK_TO,
+        from: { email: env.ALERT_FROM, name: "AMH WT Mail Check" },
+        subject: message.subject,
+        text: message.text,
+        html: message.html,
+      });
+      return "cloudflare-email";
+    } catch (error) {
+      cloudflareError = error;
+    }
+  }
+  if (env.MAIL_GATEWAY_URL && env.MAIL_APP_TOKEN && env.MAIL_FROM) {
+    const base = new URL(env.MAIL_GATEWAY_URL);
+    if (base.protocol !== "https:") throw new Error("Mail gateway must use HTTPS");
+    const response = await fetch(new URL("send", base.href.replace(/\/?$/, "/")), {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-app-token": env.MAIL_APP_TOKEN },
+      body: JSON.stringify({
+        from: env.MAIL_FROM,
+        to: [env.ALERT_LOOPBACK_TO],
+        subject: message.subject,
+        text: message.text,
+        html: message.html,
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(`Mail gateway refused loopback: ${String(result.error || response.status).slice(0, 120)}`);
+    return "mail-gateway";
+  }
+  throw cloudflareError || new Error("Email loopback sender is not configured");
+}
+
 function randomCode() {
   const bytes = crypto.getRandomValues(new Uint8Array(18));
   return "AMHWT-" + [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("").toUpperCase();
 }
 
 async function startEmailLoopback(env) {
-  if (!env.EMAIL || !env.ALERT_FROM || !env.ALERT_LOOPBACK_TO) throw new Error("Email loopback is not configured");
+  if (!env.ALERT_LOOPBACK_TO) throw new Error("Email loopback destination is not configured");
   const id = crypto.randomUUID();
   const code = randomCode();
   const expires_at = new Date(Date.now() + 10 * 60 * 1000).toISOString();
   const verifier = await emailVerifier(env);
   await verifier.beginTest({ id, code, expires_at });
-  await env.EMAIL.send({
-    to: env.ALERT_LOOPBACK_TO,
-    from: { email: env.ALERT_FROM, name: "AMH WT Mail Check" },
+  const transport = await sendLoopbackMessage(env, {
     subject: `AMH WT loopback verification ${code}`,
     text: `Automatic mail-system verification. Code: ${code}`,
     html: `<p>Automatic mail-system verification.</p><p><strong>${code}</strong></p>`,
   });
-  return { id, status: "pending", expires_at, meaning: "Confirms Cloudflare send, DNS, inbound routing, and Worker receipt; it does not certify a separate personal inbox's spam placement." };
+  return { id, status: "pending", transport, expires_at, meaning: "Confirms send, DNS, inbound routing, and Worker receipt; it does not certify a separate personal inbox's spam placement." };
 }
 
 async function internalApi(request, env) {
