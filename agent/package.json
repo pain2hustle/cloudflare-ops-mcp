@@ -7,6 +7,7 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "dry-run": "wrangler deploy --dry-run",
+    "dash": "node scripts/dash.mjs",
     "watch": "node scripts/watch.mjs",
     "watch:pipe": "wrangler tail amh-wt-agent-harness --format json | node scripts/watch.mjs",
     "preview:ui": "node scripts/preview-ui.mjs",
