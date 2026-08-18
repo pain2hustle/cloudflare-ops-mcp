@@ -79,6 +79,17 @@ export const TEMPLATES = Object.freeze({
     requiresUrls: false,
     verifier: true,
   },
+  security_review: {
+    title: "Security review",
+    purpose: "Read the supplied diff or source pages and report auth bypasses, missing ownership checks, injection paths, and secret exposure as findings with severity, a CWE id where one fits, the exact location, and a concrete exploit scenario. The independent verifier then tries to refute each finding; only findings that survive refutation are reported as confirmed, the rest stay flagged as unproven.",
+    tools: ["fetch", "reason"],
+    requiresUrls: true,
+    verifier: true,
+    // Judgment-heavy: needs the paid-k2 lane. On the free lane the small model
+    // cannot hold this strict schema and the coordinator rejects its output
+    // rather than reporting malformed findings.
+    prefersProfile: "paid-k2",
+  },
 });
 
 export const PERSONAL_ASSISTANT = Object.freeze({
@@ -140,6 +151,11 @@ export const CAPABILITY_TREE = Object.freeze({
 });
 
 export const LEARNING_LOG = Object.freeze([
+  {
+    version: HARNESS_VERSION,
+    added: "Security review with refute-then-confirm",
+    meaning: "The security_review template reports auth/injection/secret findings with severity and CWE, then an independent verifier tries to refute each one; only survivors are confirmed.",
+  },
   {
     version: HARNESS_VERSION,
     added: "Versioned transfer contract",

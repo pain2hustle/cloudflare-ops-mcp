@@ -4,9 +4,13 @@ import { CAPABILITY_TREE, LEARNING_LOG, TEMPLATES, templateList } from "../src/t
 import { cloudflareMcpList } from "../src/mcp-catalog.js";
 
 test("catalog includes research, verification, continuity revision, and data review templates", () => {
-  for (const id of ["web_research", "secondary_dive", "citation_verify", "ui_playwright", "site_health", "cloudflare_diagnose", "cloudflare_inventory", "data_query_review", "missed_items", "revision_proposal"]) {
+  for (const id of ["web_research", "secondary_dive", "citation_verify", "ui_playwright", "site_health", "cloudflare_diagnose", "cloudflare_inventory", "data_query_review", "missed_items", "revision_proposal", "security_review"]) {
     assert.ok(TEMPLATES[id], id);
   }
+  // security_review must ship the refute-then-confirm doctrine and require sources.
+  assert.match(TEMPLATES.security_review.purpose, /refute/i);
+  assert.equal(TEMPLATES.security_review.requiresUrls, true);
+  assert.equal(TEMPLATES.security_review.verifier, true);
   assert.equal(templateList().length, Object.keys(TEMPLATES).length);
   assert.ok(CAPABILITY_TREE.cannot.some((item) => item.includes("token")));
   assert.ok(LEARNING_LOG.length >= 4);

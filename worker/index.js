@@ -287,7 +287,7 @@ const TOOLS = [
       type: "object",
       properties: {
         agent_name: { type: "string", description: "Friendly reusable name shown in the console, terminal, logs, and handoffs." },
-        template_id: { type: "string", enum: ["web_research", "secondary_dive", "citation_verify", "ui_playwright", "site_health", "cloudflare_diagnose", "cloudflare_inventory", "data_query_review", "config_compare", "missed_items", "revision_proposal"] },
+        template_id: { type: "string", enum: ["web_research", "secondary_dive", "citation_verify", "ui_playwright", "site_health", "cloudflare_diagnose", "cloudflare_inventory", "data_query_review", "config_compare", "missed_items", "revision_proposal", "security_review"] },
         objective: { type: "string", description: "Exact bounded task and evidence required." },
         allowed_domains: { type: "array", items: { type: "string" }, description: "Explicit domains the crawler may access." },
         urls: { type: "array", items: { type: "string" }, description: "HTTPS seed URLs inside the allowlist." },
