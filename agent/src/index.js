@@ -189,6 +189,17 @@ async function internalApi(request, env) {
     await readJson(request, 4096);
     return json(await agent.retentionSweep());
   }
+  if (request.method === "POST" && url.pathname === "/internal/alerts/test") {
+    await readJson(request, 4096);
+    const test = await startEmailLoopback(env);
+    await agent.log(null, "email_loopback_started", { test_id: test.id, expires_at: test.expires_at }, "operator");
+    return json(test, { status: 202 });
+  }
+  if (request.method === "GET" && /^\/internal\/alerts\/test\/[^/]+$/.test(url.pathname)) {
+    const id = decodeURIComponent(url.pathname.split("/").pop());
+    const result = await (await emailVerifier(env)).testStatus(id);
+    return result ? json(result) : json({ error: "Email test not found" }, { status: 404 });
+  }
   return json({ error: "Not found" }, { status: 404 });
 }
 
@@ -274,7 +285,7 @@ async function fetchHandler(request, env) {
     return new Response(renderConsole({ turnstileSitekey: env.TURNSTILE_SITEKEY || "" }), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
   }
   if (request.method === "GET" && url.pathname === "/health") {
-    return json({ ok: true, service: "AMH WT MCP Agent Console", version: "0.1.0", turnstile_configured: !!(env.TURNSTILE_SITEKEY && env.TURNSTILE_SECRET), auth_configured: !!(env.HARNESS_ACCESS_KEY && env.SESSION_SIGNING_KEY), storage: "Cloudflare Durable Objects encrypted at rest", agent_routes_public: false });
+    return json({ ok: true, service: "AMH WT MCP Agent Console", version: "0.1.1", turnstile_configured: !!(env.TURNSTILE_SITEKEY && env.TURNSTILE_SECRET), auth_configured: !!(env.HARNESS_ACCESS_KEY && env.SESSION_SIGNING_KEY), storage: "Cloudflare Durable Objects encrypted at rest", agent_routes_public: false });
   }
   if (request.method === "POST" && url.pathname === "/api/session") return openSession(request, env);
   if (request.method === "DELETE" && url.pathname === "/api/session") return json({ ok: true }, { headers: { "set-cookie": clearSessionCookie() } });

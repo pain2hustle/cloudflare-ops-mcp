@@ -20,7 +20,7 @@
 
 Cloudflare Ops MCP scans Cloudflare configuration, computes a **diff** of desired vs current **DNS / Email Routing / BIMI / DMARC / SPF / Pages / cache / Turnstile** setup, and **applies fixes only after explicit approval**. It is built for people who want an AI agent to help with Cloudflare safely: scan first, show the plan, then write only when the owner approves.
 
-Version 0.4.1 works five ways:
+Version 0.4.2 works five ways:
 
 - **CLI**: run `cfops` locally with a scoped Cloudflare token.
 - **Library**: import the zero-dependency engine into your own app.

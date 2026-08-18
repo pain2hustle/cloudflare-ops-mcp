@@ -62,7 +62,7 @@ Version 0.4 can delegate bounded work to the companion Agent Harness through fiv
 Start a bounded job:
 
 ```json
-{"name":"agent_research_start","arguments":{"agent_name":"Jack","template_id":"site_health","objective":"Verify the release endpoint","allowed_domains":["example.com"],"urls":["https://example.com/health"],"expected_text":"0.4.1"}}
+{"name":"agent_research_start","arguments":{"agent_name":"Jack","template_id":"site_health","objective":"Verify the release endpoint","allowed_domains":["example.com"],"urls":["https://example.com/health"],"expected_text":"0.4.2"}}
 ```
 
 Read status or recent jobs:

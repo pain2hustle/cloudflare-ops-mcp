@@ -134,7 +134,7 @@ export class Coordinator extends Agent {
       last_alert_at INTEGER
     )`;
     const manifest = {
-      version: "0.1.0",
+      version: "0.1.1",
       primary_model: this.env.PRIMARY_MODEL,
       fallback_model: this.env.FALLBACK_MODEL,
       model_profile: this.env.MODEL_PROFILE || "free",
@@ -146,7 +146,7 @@ export class Coordinator extends Agent {
       retention: { source_days: Number(this.env.RETAIN_SOURCE_DAYS || 4), detail_days: Number(this.env.RETAIN_DETAIL_DAYS || 7), event_days: Number(this.env.RETAIN_EVENT_DAYS || 30), max_detail_bytes: Number(this.env.MAX_DETAIL_BYTES || 5242880) },
       safety: "SafeTry named adapters; read-only default; no generic shell; hashed approvals required for future mutations",
     };
-    this.sql`INSERT OR IGNORE INTO agent_versions (version,status,manifest_json,created_at) VALUES (${"0.1.0"},${"active"},${JSON.stringify(manifest)},${Date.now()})`;
+    this.sql`INSERT OR IGNORE INTO agent_versions (version,status,manifest_json,created_at) VALUES (${"0.1.1"},${"active"},${JSON.stringify(manifest)},${Date.now()})`;
     this.sql`INSERT OR IGNORE INTO agent_profiles (id,name,kind,template_id,role_title,description,system,active,created_at,updated_at)
       VALUES (${PERSONAL_ASSISTANT.id},${PERSONAL_ASSISTANT.name},${PERSONAL_ASSISTANT.kind},${null},${PERSONAL_ASSISTANT.role_title},${PERSONAL_ASSISTANT.description},${1},${1},${Date.now()},${Date.now()})`;
     if (!this.state.memory.updated_at) {
@@ -278,7 +278,7 @@ export class Coordinator extends Agent {
     const now = Date.now();
     this.sql`INSERT INTO jobs (id,status,packet_json,packet_hash,memory_hash,created_at,updated_at)
       VALUES (${id}, ${"queued"}, ${JSON.stringify(packet)}, ${packetHash}, ${memoryHash}, ${now}, ${now})`;
-    this.sql`UPDATE agent_versions SET total_jobs=total_jobs+1 WHERE version=${"0.1.0"}`;
+    this.sql`UPDATE agent_versions SET total_jobs=total_jobs+1 WHERE version=${"0.1.1"}`;
     await this.log(id, "job_created", { packet_hash: packetHash, memory_hash: memoryHash, template_id: packet.template_id, template_title: packet.template_title, agent_profile_id: profile.id, agent_name: packet.agent_name }, actor);
     this.setState({ ...this.state, job_count: this.state.job_count + 1 });
     if (packet.schedule.enabled) await this.putSchedule({ packet, every_minutes: packet.schedule.every_minutes }, actor);
@@ -349,7 +349,7 @@ export class Coordinator extends Agent {
           verifier: verifier ? { summary: verifier.result.summary, claims: verifier.result.claims, gaps: verifier.result.gaps, contradictions: verifier.result.contradictions, confidence: verifier.result.confidence } : null,
         };
         this.sql`UPDATE jobs SET status=${"completed"}, compact_json=${JSON.stringify(compact)}, updated_at=${Date.now()} WHERE id=${id}`;
-        this.sql`UPDATE agent_versions SET completed_jobs=completed_jobs+1, verifier_runs=verifier_runs+${verifier ? 1 : 0}, confidence_sum=confidence_sum+${Number(primary.result.confidence || 0)} WHERE version=${"0.1.0"}`;
+        this.sql`UPDATE agent_versions SET completed_jobs=completed_jobs+1, verifier_runs=verifier_runs+${verifier ? 1 : 0}, confidence_sum=confidence_sum+${Number(primary.result.confidence || 0)} WHERE version=${"0.1.1"}`;
         const usage = await this.usageSummary();
         await this.log(id, "job_completed", { verifier: !!verifier, ai_calls: verifier ? 2 : 1, daily_calls: usage.harness_calls, daily_limit: usage.harness_call_limit, agent_name: packet.agent_name }, "coordinator");
         this.setState({ ...this.state, status: "ready", active_job_id: null });
@@ -359,7 +359,7 @@ export class Coordinator extends Agent {
       const safe = cleanText(error?.message || error, 1200);
       const stopped = safe === "STOP_REQUESTED";
       this.sql`UPDATE jobs SET status=${stopped ? "cancelled" : "failed"}, error=${stopped ? null : safe}, updated_at=${Date.now()} WHERE id=${id}`;
-      if (!stopped) this.sql`UPDATE agent_versions SET failed_jobs=failed_jobs+1 WHERE version=${"0.1.0"}`;
+      if (!stopped) this.sql`UPDATE agent_versions SET failed_jobs=failed_jobs+1 WHERE version=${"0.1.1"}`;
       await this.log(id, stopped ? "job_cancelled" : "job_failed", stopped ? {} : { error: safe }, "coordinator");
       this.setState({ ...this.state, status: "ready", active_job_id: null, stop_requested_jobs: this.state.stop_requested_jobs.filter((item) => item !== id) });
       if (stopped) return this.getJob(id);
@@ -408,7 +408,7 @@ export class Coordinator extends Agent {
     }
     const compact = { objective: packet.objective, template_id: packet.template_id, agent_name: packet.agent_name, ai_calls: 0, checks };
     this.sql`UPDATE jobs SET status=${"completed"}, compact_json=${JSON.stringify(compact)}, updated_at=${now} WHERE id=${id}`;
-    this.sql`UPDATE agent_versions SET completed_jobs=completed_jobs+1 WHERE version=${"0.1.0"}`;
+    this.sql`UPDATE agent_versions SET completed_jobs=completed_jobs+1 WHERE version=${"0.1.1"}`;
     const usage = await this.usageSummary();
     await this.log(id, "job_completed", { verifier: false, ai_calls: 0, daily_calls: usage.harness_calls, daily_limit: usage.harness_call_limit, health_checks: checks.length, failed_checks: checks.filter((item) => !item.healthy).length, agent_name: packet.agent_name }, "coordinator");
     this.setState({ ...this.state, status: "ready", active_job_id: null });
