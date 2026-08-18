@@ -17,13 +17,21 @@ function json(data, init = {}) {
   return new Response(JSON.stringify(data), { ...init, headers: { ...JSON_HEADERS, ...(init.headers || {}) } });
 }
 
-function securityHeaders(response) {
+// The MCP OAuth popup needs its opener preserved: the console page opens the
+// popup (needs same-origin-allow-popups), and the callback completion page,
+// returning from a cross-origin Cloudflare hop, must be unsafe-none or the
+// browser severs window.opener and the postMessage handshake dies.
+const OAUTH_CALLBACK_RE = /^\/agents\/coordinator\/user-[A-Za-z0-9_-]+\/callback$/;
+
+function securityHeaders(response, request) {
   const headers = new Headers(response.headers);
   headers.set("x-content-type-options", "nosniff");
   headers.set("x-frame-options", "DENY");
   headers.set("referrer-policy", "no-referrer");
   headers.set("permissions-policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()");
-  headers.set("cross-origin-opener-policy", "same-origin");
+  let coop = "same-origin-allow-popups";
+  try { if (request && OAUTH_CALLBACK_RE.test(new URL(request.url).pathname)) coop = "unsafe-none"; } catch {}
+  headers.set("cross-origin-opener-policy", coop);
   headers.set("cross-origin-resource-policy", "same-origin");
   headers.set("content-security-policy", "default-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'");
   headers.set("x-robots-tag", "noindex, nofollow, noarchive");
@@ -107,7 +115,7 @@ async function authenticated(request, env) {
 }
 
 async function coordinator(env, actor) {
-  return getAgentByName(env.COORDINATORS, `user-${actor}`);
+  return getAgentByName(env.COORDINATOR, `user-${actor}`);
 }
 
 async function emailVerifier(env) {
@@ -330,7 +338,7 @@ async function fetchHandler(request, env) {
     return new Response(renderConsole({ turnstileSitekey: env.TURNSTILE_SITEKEY || "" }), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
   }
   if (request.method === "GET" && url.pathname === "/health") {
-    return json({ ok: true, service: "AMH WT MCP Agent Console", version: "0.1.3", turnstile_configured: !!(env.TURNSTILE_SITEKEY && env.TURNSTILE_SECRET), auth_configured: !!(env.HARNESS_ACCESS_KEY && env.SESSION_SIGNING_KEY), storage: "Cloudflare Durable Objects encrypted at rest", agent_routes_public: false });
+    return json({ ok: true, service: "AMH WT MCP Agent Console", version: "0.1.4", turnstile_configured: !!(env.TURNSTILE_SITEKEY && env.TURNSTILE_SECRET), auth_configured: !!(env.HARNESS_ACCESS_KEY && env.SESSION_SIGNING_KEY), storage: "Cloudflare Durable Objects encrypted at rest", agent_routes_public: false });
   }
   if (request.method === "GET" && url.pathname === "/api/session") {
     const session = await authenticated(request, env);
@@ -349,8 +357,8 @@ async function fetchHandler(request, env) {
 
 export default {
   async fetch(request, env) {
-    try { return securityHeaders(await fetchHandler(request, env)); }
-    catch (error) { return securityHeaders(json({ error: String(error?.message || error).slice(0, 800) }, { status: 400 })); }
+    try { return securityHeaders(await fetchHandler(request, env), request); }
+    catch (error) { return securityHeaders(json({ error: String(error?.message || error).slice(0, 800) }, { status: 400 }), request); }
   },
   async email(message, env) {
     await routeAgentEmail(message, env, {

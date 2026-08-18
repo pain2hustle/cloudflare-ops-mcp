@@ -16,7 +16,7 @@
   ],
   "durable_objects": {
     "bindings": [
-      { "name": "COORDINATORS", "class_name": "Coordinator" },
+      { "name": "COORDINATOR", "class_name": "Coordinator" },
       { "name": "EMAIL_VERIFIERS", "class_name": "EmailVerifier" }
     ]
   },
