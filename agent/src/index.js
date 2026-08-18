@@ -7,6 +7,7 @@ import { capabilitySummary, SAFETRY_FLOW } from "./safetry.js";
 import { CAPABILITY_TREE, LEARNING_LOG, MEMORY_SCHEMA, templateList } from "./templates.js";
 import { renderConsole } from "./ui.js";
 import { cloudflareMcpList } from "./mcp-catalog.js";
+import { skillList } from "./skill-catalog.js";
 
 export { Coordinator, EmailVerifier };
 
@@ -191,7 +192,7 @@ async function internalApi(request, env) {
   if (request.method === "GET" && url.pathname === "/internal/jobs") return json({ jobs: await agent.listJobs(50) });
   if (request.method === "GET" && url.pathname === "/internal/dashboard") {
     const dashboard = await agent.dashboard();
-    return json({ ...dashboard, catalog: { templates: templateList(), capability_tree: CAPABILITY_TREE, learning_log: LEARNING_LOG, memory_schema: MEMORY_SCHEMA, capabilities: capabilitySummary(), safety_flow: SAFETRY_FLOW, cloudflare_mcp: cloudflareMcpList() }, cloudflare_mcp: await agent.cloudflareMcpStatus() });
+    return json({ ...dashboard, catalog: { templates: templateList(), skills: skillList(), capability_tree: CAPABILITY_TREE, learning_log: LEARNING_LOG, memory_schema: MEMORY_SCHEMA, capabilities: capabilitySummary(), safety_flow: SAFETRY_FLOW, cloudflare_mcp: cloudflareMcpList() }, cloudflare_mcp: await agent.cloudflareMcpStatus() });
   }
   if (request.method === "GET" && url.pathname === "/internal/briefing") return json(await agent.getBriefing());
   if (request.method === "GET" && url.pathname === "/internal/revisions") return json({ revisions: await agent.listRevisions() });
@@ -244,7 +245,7 @@ async function privateApi(request, env, session) {
   const agent = await coordinator(env, session.actor);
   if (request.method === "GET" && url.pathname === "/api/dashboard") {
     const dashboard = await agent.dashboard();
-    return json({ ...dashboard, catalog: { templates: templateList(), capability_tree: CAPABILITY_TREE, learning_log: LEARNING_LOG, memory_schema: MEMORY_SCHEMA, capabilities: capabilitySummary(), safety_flow: SAFETRY_FLOW, cloudflare_mcp: cloudflareMcpList() }, cloudflare_mcp: await agent.cloudflareMcpStatus() });
+    return json({ ...dashboard, catalog: { templates: templateList(), skills: skillList(), capability_tree: CAPABILITY_TREE, learning_log: LEARNING_LOG, memory_schema: MEMORY_SCHEMA, capabilities: capabilitySummary(), safety_flow: SAFETRY_FLOW, cloudflare_mcp: cloudflareMcpList() }, cloudflare_mcp: await agent.cloudflareMcpStatus() });
   }
   if (request.method === "GET" && /^\/api\/jobs\/[^/]+$/.test(url.pathname)) {
     const id = decodeURIComponent(url.pathname.split("/").pop());
@@ -321,7 +322,7 @@ async function fetchHandler(request, env) {
     return new Response(renderConsole({ turnstileSitekey: env.TURNSTILE_SITEKEY || "" }), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
   }
   if (request.method === "GET" && url.pathname === "/health") {
-    return json({ ok: true, service: "AMH WT MCP Agent Console", version: "0.1.1", turnstile_configured: !!(env.TURNSTILE_SITEKEY && env.TURNSTILE_SECRET), auth_configured: !!(env.HARNESS_ACCESS_KEY && env.SESSION_SIGNING_KEY), storage: "Cloudflare Durable Objects encrypted at rest", agent_routes_public: false });
+    return json({ ok: true, service: "AMH WT MCP Agent Console", version: "0.1.2", turnstile_configured: !!(env.TURNSTILE_SITEKEY && env.TURNSTILE_SECRET), auth_configured: !!(env.HARNESS_ACCESS_KEY && env.SESSION_SIGNING_KEY), storage: "Cloudflare Durable Objects encrypted at rest", agent_routes_public: false });
   }
   if (request.method === "POST" && url.pathname === "/api/session") return openSession(request, env);
   if (request.method === "DELETE" && url.pathname === "/api/session") return json({ ok: true }, { headers: { "set-cookie": clearSessionCookie() } });

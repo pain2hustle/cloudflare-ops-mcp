@@ -1,0 +1,4 @@
+interface:
+  display_name: "Refute-First Security Review"
+  short_description: "Confirm security findings by trying to refute them"
+  default_prompt: "Use $cfops-security-review to review this change and confirm only findings that survive refutation."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Private MCP Access"
+  short_description: "Connect Cloudflare MCP without exposing keys"
+  default_prompt: "Use $cfops-mcp-access to connect and test this user Cloudflare account without exposing credentials."

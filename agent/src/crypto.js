@@ -7,9 +7,13 @@ function b64url(bytes) {
 }
 
 function fromB64url(value) {
-  const padded = String(value).replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
+  const encoded = String(value || "");
+  if (!encoded || !/^[A-Za-z0-9_-]+$/.test(encoded)) throw new Error("Invalid base64url");
+  const padded = encoded.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(encoded.length / 4) * 4, "=");
   const binary = atob(padded);
-  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  const decoded = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  if (b64url(decoded) !== encoded) throw new Error("Non-canonical base64url");
+  return decoded;
 }
 
 async function hmac(secret, value) {

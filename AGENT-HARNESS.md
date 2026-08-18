@@ -6,6 +6,8 @@ The harness is a companion Cloudflare Worker. It does not expose a generic shell
 
 - **Jack** starts as the permanent Personal Assistant / Office Manager profile. The display name is editable; the role remains visible.
 - Specialists are reused by template. Leave the name empty to get a scenario-aware person, pet, or callsign; supply a name to create/reuse that profile.
+- Process skills under `skills/` are selected automatically by template and written into the immutable job packet. The live Skills tab shows the mapping.
+- Supported learning may file a candidate revision against a skill. No agent can silently change an active skill; promotion still requires review, tests, Git, and a verified release.
 - Existing job packets and audit events keep the name used when they ran. Renaming changes future work, not history.
 - The web console supports click, edit, Enter. The optional terminal supports `agents`, `job <id>`, and `name <agent-id> <new name>`.
 

@@ -10,13 +10,15 @@
 
 **An approval-gated Cloudflare operations suite with an optional private Agent Harness: bounded delegation, deterministic verification, OAuth-isolated MCP tools, and verified deploy checks without handing agents raw account credentials.**
 
-- **Private Agent Harness:** Jack-friendly reusable agent profiles, bounded research and independent verification, automatic schedules, compact continuity briefings, and a live operator console for jobs, handoffs, limits, and redacted logs.
+- **Private Agent Harness:** Jack-friendly reusable profiles plus eight automatic process skill folders for safe deploys, live checks, mail loopback, lean handoffs, security review, private MCP access, Google source research, and optional Claude second opinions.
 - **SafeTry controls:** read-only defaults, explicit approvals, narrow adapters instead of a generic shell, tenant isolation, retention limits, and a tamper-evident audit chain.
 - **Verified deploy gate:** checks the public target for an explicit 2xx status, rejects redirects, and optionally requires an expected release marker before reporting success.
 - **Deterministic site health:** zero-AI HTTP checks remain useful for small valid pages and can require an expected text marker to catch a 200 response serving the wrong site.
 - **Self-catching email loopback:** exercises the configured sending/routing path and records delivery evidence; it does not claim to prove placement in a provider's inbox tab.
 - **Cloudflare-native connections:** optional OAuth connectors for the official Cloudflare API, Workers Builds, Bindings, Observability, and Docs MCP services, plus Wrangler-based Worker deployment and secrets.
 - **Guarded operations:** Turnstile, DNS, SPF/DMARC/BIMI, Email Routing, Pages cutovers, cache purge, scoped tokens, and account diagnostics stay dry-run or approval-gated where they write.
+
+> **Latest update - v0.4.2:** the live harness now selects reusable skill folders automatically, shows them in the operator console, records them in hashed job packets, supports Google-first source research and an optional user-configured Claude verification pass, and targets learned improvements at reviewable skill revisions. See the [latest release](https://github.com/pain2hustle/cloudflare-ops-mcp/releases/latest).
 
 Cloudflare Ops MCP scans Cloudflare configuration, computes a **diff** of desired vs current **DNS / Email Routing / BIMI / DMARC / SPF / Pages / cache / Turnstile** setup, and **applies fixes only after explicit approval**. It is built for people who want an AI agent to help with Cloudflare safely: scan first, show the plan, then write only when the owner approves.
 
@@ -207,7 +209,19 @@ Apply exactly the change I just approved, then verify the live result.
 
 The agent chooses the appropriate MCP tool from its schema. Read-only calls run immediately. Mutation tools return a dry-run diff unless the caller explicitly sends `apply: true`; users should approve only after reading that diff.
 
-Current v0.4 tools cover DNS, email authentication/routing, Pages cutover, cache purge, Turnstile, token operations, and account diagnostics — plus the **AMH WT Agent Harness** (`agent/`): a private companion Worker for bounded research, verification, UI checks, and zero-AI site-health watches. One Durable Object per user keeps a tamper-evident audit chain, friendly reusable agent profiles (Jack is the default office manager), a Continuity Keeper briefing with automatic 4/7/30-day retention, daily model-call limits, schedules, and candidate revisions that never self-apply. The default Free profile uses `@cf/zai-org/glm-4.7-flash` with independent `@cf/google/gemma-4-26b-a4b-it` verification; `@cf/moonshotai/kimi-k2.6` is labeled and enabled only as an explicit Workers Paid profile. The authenticated console and optional terminal show live handoffs, names, limits, alerts, and exact recorded model calls without spending another inference. Official Cloudflare API, Workers Builds, Bindings, Observability, and Docs MCP connectors use each operator's own OAuth grant. See [AGENT-HARNESS.md](AGENT-HARNESS.md), [CLOUDFLARE-MCP.md](CLOUDFLARE-MCP.md), [MAIL-LANDING-GUIDE.md](MAIL-LANDING-GUIDE.md), and [RELEASE-GATE.md](RELEASE-GATE.md).
+Current v0.4 tools cover DNS, email authentication/routing, Pages cutover, cache purge, Turnstile, token operations, and account diagnostics — plus the **AMH WT Agent Harness** (`agent/`): a private companion Worker for bounded research, verification, UI checks, and zero-AI site-health watches. Eight native process folders under `skills/` are selected automatically and recorded in each job packet: safe deployment, live verification, email loopback, compact context handoff, refute-first security review, private MCP access, Google source research, and an optional user-configured Claude second opinion. One Durable Object per user keeps a tamper-evident audit chain, friendly reusable agent profiles (Jack is the default office manager), a Continuity Keeper briefing with automatic 4/7/30-day retention, daily model-call limits, schedules, and candidate skill/template revisions that never self-apply. The default Free profile uses `@cf/zai-org/glm-4.7-flash` with independent `@cf/google/gemma-4-26b-a4b-it` verification; `@cf/moonshotai/kimi-k2.6` is labeled and enabled only as an explicit Workers Paid profile. The authenticated console and optional terminal show live handoffs, names, skills, limits, alerts, and exact recorded model calls without spending another inference. Official Cloudflare API, Workers Builds, Bindings, Observability, and Docs MCP connectors use each operator's own OAuth grant. See [AGENT-HARNESS.md](AGENT-HARNESS.md), [CLOUDFLARE-MCP.md](CLOUDFLARE-MCP.md), [MAIL-LANDING-GUIDE.md](MAIL-LANDING-GUIDE.md), and [RELEASE-GATE.md](RELEASE-GATE.md).
+
+### Case sample: land it, prove it, remember the right part
+
+Request: “Deploy my Worker, make sure the nav does not 404 on phone, and verify the confirmation email really comes back.”
+
+1. The coordinator attaches `cfops-safe-deploy`, `cfops-live-verify`, `cfops-email-loopback`, and `cfops-context-handoff` to the bounded work instead of creating permanent extra agents.
+2. SafeTry runs tests, a Wrangler dry-run, a Git checkpoint, and an exact public version-marker gate. A successful upload alone is not accepted.
+3. Live verification checks the changed route, redirect policy, expected text, and phone interaction. A 200 response serving the wrong app fails.
+4. Mail verification sends a one-use challenge through the production sender, public MX, Cloudflare Email Routing, and the inbound Worker. It records confirmed, expired, or failed without exposing the message credential.
+5. The handoff keeps the release commit, deployment receipt, verified facts, and next safe action; stale chatter expires. If the same correction recurs, the agent files a revision against the responsible skill for review and testing.
+
+For current research, `cfops-google-research` opens and traces primary sources instead of trusting snippets. Hard claims may also use `cfops-claude-verifier` as an independent second opinion when the operator has configured that provider; the user's key is never included in the repository.
 
 ## Install
 

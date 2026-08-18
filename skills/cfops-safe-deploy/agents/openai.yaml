@@ -1,0 +1,4 @@
+interface:
+  display_name: "Safe Cloudflare Deploy"
+  short_description: "Deploy Workers with rollback-safe gates"
+  default_prompt: "Use $cfops-safe-deploy to deploy this Cloudflare project with preflight and live verification."

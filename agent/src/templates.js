@@ -1,4 +1,4 @@
-export const HARNESS_VERSION = "0.1.1";
+export const HARNESS_VERSION = "0.1.2";
 
 export const TEMPLATES = Object.freeze({
   web_research: {
@@ -151,6 +151,11 @@ export const CAPABILITY_TREE = Object.freeze({
 });
 
 export const LEARNING_LOG = Object.freeze([
+  {
+    version: HARNESS_VERSION,
+    added: "Process skills with automatic selection",
+    meaning: "Every job records its reusable skill folders; supported revisions target a skill but cannot silently self-promote.",
+  },
   {
     version: HARNESS_VERSION,
     added: "Security review with refute-then-confirm",

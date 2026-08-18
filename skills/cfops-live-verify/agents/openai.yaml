@@ -1,0 +1,4 @@
+interface:
+  display_name: "Live Site Verifier"
+  short_description: "Verify routes, pages, UI, and regressions"
+  default_prompt: "Use $cfops-live-verify to verify this release end to end and report exact evidence."

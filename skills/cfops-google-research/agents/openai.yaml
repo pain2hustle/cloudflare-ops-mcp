@@ -1,0 +1,4 @@
+interface:
+  display_name: "Google Source Research"
+  short_description: "Find, trace, and verify primary web sources"
+  default_prompt: "Use $cfops-google-research to research this question and return source-backed findings."

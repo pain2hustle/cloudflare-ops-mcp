@@ -1,0 +1,4 @@
+interface:
+  display_name: "Email Loopback Verifier"
+  short_description: "Prove email delivery through a real inbox loop"
+  default_prompt: "Use $cfops-email-loopback to test this email flow through its real inbound route."

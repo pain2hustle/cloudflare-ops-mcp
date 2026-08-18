@@ -1,0 +1,4 @@
+interface:
+  display_name: "Claude Second Opinion"
+  short_description: "Route hard verification to a configured Claude lane"
+  default_prompt: "Use $cfops-claude-verifier to independently challenge and verify these findings."

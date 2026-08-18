@@ -1,4 +1,5 @@
 import { HARNESS_VERSION, TEMPLATES } from "./templates.js";
+import { skillsForTemplate } from "./skill-catalog.js";
 
 export const RESULT_SCHEMA = Object.freeze({
   type: "object",
@@ -35,6 +36,7 @@ export const RESULT_SCHEMA = Object.freeze({
         properties: {
           title: { type: "string" },
           target_template: { type: "string" },
+          target_skill: { type: "string" },
           current_instruction: { type: "string" },
           proposed_instruction: { type: "string" },
           rationale: { type: "string" },
@@ -92,6 +94,7 @@ export function normalizePacket(input, env = {}) {
     template_id: templateId,
     agent_name: cleanText(input?.agent_name, 80) || template.title,
     template_title: template.title,
+    skill_ids: skillsForTemplate(templateId),
     expected_text: cleanText(input?.expected_text, 200),
     objective,
     allowed_domains: allowedDomains,

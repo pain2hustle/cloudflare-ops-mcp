@@ -1,0 +1,4 @@
+interface:
+  display_name: "Context Handoff Keeper"
+  short_description: "Keep lean, safe, restorable agent handoffs"
+  default_prompt: "Use $cfops-context-handoff to save the durable facts and drop stale context safely."
