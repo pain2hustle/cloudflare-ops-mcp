@@ -1,4 +1,4 @@
-export const HARNESS_VERSION = "0.1.2";
+export const HARNESS_VERSION = "0.1.3";
 
 export const TEMPLATES = Object.freeze({
   web_research: {
@@ -151,6 +151,11 @@ export const CAPABILITY_TREE = Object.freeze({
 });
 
 export const LEARNING_LOG = Object.freeze([
+  {
+    version: HARNESS_VERSION,
+    added: "Guided one-click MCP OAuth",
+    meaning: "The console opens Cloudflare consent, polls the isolated connector until discovery is ready, restores secure sessions after redirects, and gives a clear retry path.",
+  },
   {
     version: HARNESS_VERSION,
     added: "Process skills with automatic selection",

@@ -195,6 +195,10 @@ async function internalApi(request, env) {
     return json({ ...dashboard, catalog: { templates: templateList(), skills: skillList(), capability_tree: CAPABILITY_TREE, learning_log: LEARNING_LOG, memory_schema: MEMORY_SCHEMA, capabilities: capabilitySummary(), safety_flow: SAFETRY_FLOW, cloudflare_mcp: cloudflareMcpList() }, cloudflare_mcp: await agent.cloudflareMcpStatus() });
   }
   if (request.method === "GET" && url.pathname === "/internal/briefing") return json(await agent.getBriefing());
+  if (request.method === "GET" && /^\/internal\/cloudflare-mcp\/[^/]+\/status$/.test(url.pathname)) {
+    const id = decodeURIComponent(url.pathname.split("/")[3]);
+    return json(await agent.cloudflareMcpConnectorStatus(id));
+  }
   if (request.method === "GET" && url.pathname === "/internal/revisions") return json({ revisions: await agent.listRevisions() });
   if (request.method === "PATCH" && /^\/internal\/agents\/[^/]+$/.test(url.pathname)) {
     const id = decodeURIComponent(url.pathname.split("/").pop());
@@ -261,6 +265,10 @@ async function privateApi(request, env, session) {
     await readJson(request, 4096);
     return json(await agent.connectCloudflareMcp(id, new URL(request.url).origin, "console"));
   }
+  if (request.method === "GET" && /^\/api\/cloudflare-mcp\/[^/]+\/status$/.test(url.pathname)) {
+    const id = decodeURIComponent(url.pathname.split("/")[3]);
+    return json(await agent.cloudflareMcpConnectorStatus(id));
+  }
   if (request.method === "DELETE" && /^\/api\/cloudflare-mcp\/[^/]+$/.test(url.pathname)) {
     const id = decodeURIComponent(url.pathname.split("/").pop());
     await readJson(request, 4096);
@@ -322,7 +330,11 @@ async function fetchHandler(request, env) {
     return new Response(renderConsole({ turnstileSitekey: env.TURNSTILE_SITEKEY || "" }), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
   }
   if (request.method === "GET" && url.pathname === "/health") {
-    return json({ ok: true, service: "AMH WT MCP Agent Console", version: "0.1.2", turnstile_configured: !!(env.TURNSTILE_SITEKEY && env.TURNSTILE_SECRET), auth_configured: !!(env.HARNESS_ACCESS_KEY && env.SESSION_SIGNING_KEY), storage: "Cloudflare Durable Objects encrypted at rest", agent_routes_public: false });
+    return json({ ok: true, service: "AMH WT MCP Agent Console", version: "0.1.3", turnstile_configured: !!(env.TURNSTILE_SITEKEY && env.TURNSTILE_SECRET), auth_configured: !!(env.HARNESS_ACCESS_KEY && env.SESSION_SIGNING_KEY), storage: "Cloudflare Durable Objects encrypted at rest", agent_routes_public: false });
+  }
+  if (request.method === "GET" && url.pathname === "/api/session") {
+    const session = await authenticated(request, env);
+    return session ? json({ ok: true, csrf: session.csrf, key_window: session.kid }) : json({ error: "Unauthorized" }, { status: 401 });
   }
   if (request.method === "POST" && url.pathname === "/api/session") return openSession(request, env);
   if (request.method === "DELETE" && url.pathname === "/api/session") return json({ ok: true }, { headers: { "set-cookie": clearSessionCookie() } });

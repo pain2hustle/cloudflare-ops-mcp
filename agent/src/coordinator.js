@@ -7,6 +7,7 @@ import { landingGuide } from "./safetry.js";
 import { auditDigest } from "./crypto.js";
 import { CLOUDFLARE_MCP_SERVERS } from "./mcp-catalog.js";
 import { evaluateHealthSource } from "./health.js";
+import { mcpOAuthCompletionResponse } from "./oauth-complete.js";
 
 const DEFAULT_MEMORY = Object.freeze({
   active_platform: "Cloudflare Workers",
@@ -57,6 +58,7 @@ export class Coordinator extends Agent {
   };
 
   async onStart() {
+    this.mcp.configureOAuthCallback({ customHandler: mcpOAuthCompletionResponse });
     this.sql`CREATE TABLE IF NOT EXISTS jobs (
       id TEXT PRIMARY KEY,
       status TEXT NOT NULL,
@@ -230,16 +232,33 @@ export class Coordinator extends Agent {
     if (host.protocol !== "https:" && host.hostname !== "127.0.0.1" && host.hostname !== "localhost") throw new Error("MCP OAuth callback host must use HTTPS");
     const result = await this.addMcpServer(config.name, config.url, { id, callbackHost: host.origin, transport: { type: "streamable-http" } });
     await this.log(null, "cloudflare_mcp_connection", { connector_id: id, name: config.name, state: result.state }, actor);
-    return { id: result.id, state: result.state, auth_url: result.state === "authenticating" ? result.authUrl : null };
+    const status = await this.cloudflareMcpConnectorStatus(id);
+    return { ...status, id: result.id, state: result.state, auth_url: result.state === "authenticating" ? result.authUrl : null };
   }
 
   async cloudflareMcpStatus() {
     const state = this.getMcpServers();
     const servers = Object.entries(state.servers || {}).filter(([id]) => CLOUDFLARE_MCP_SERVERS[id]).map(([id, server]) => ({
-      id, name: server.name, server_url: server.server_url, state: server.state,
+      id, name: server.name, server_url: server.server_url, state: server.state, ready: server.state === "ready", error: cleanText(server.error, 300) || null,
     }));
     const tools = (state.tools || []).filter((tool) => CLOUDFLARE_MCP_SERVERS[tool.serverId]).map((tool) => ({ server_id: tool.serverId, name: tool.name, description: cleanText(tool.description, 300) }));
     return { servers, tools, note: "Connections and OAuth tokens are isolated in this user's Durable Object. Tool promotion remains SafeTry-gated." };
+  }
+
+  async cloudflareMcpConnectorStatus(id) {
+    const config = CLOUDFLARE_MCP_SERVERS[id];
+    if (!config) throw new Error("Unknown Cloudflare MCP connector");
+    const status = await this.cloudflareMcpStatus();
+    const server = status.servers.find((item) => item.id === id);
+    const tools = status.tools.filter((tool) => tool.server_id === id);
+    return {
+      id,
+      name: config.name,
+      state: server?.state || "not_connected",
+      ready: server?.state === "ready",
+      tool_count: tools.length,
+      error: server?.error || null,
+    };
   }
 
   async disconnectCloudflareMcp(id, actor = "console") {

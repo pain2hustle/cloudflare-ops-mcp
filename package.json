@@ -1,7 +1,7 @@
 {
   "name": "cloudflare-ops-mcp",
-  "version": "0.4.2",
-  "description": "AMH WT Cloudflare Ops MCP v0.4.2: OAuth-isolated Cloudflare tools plus a private SafeTry Agent Harness with automatic reusable process skills, bounded research, Google source tracing, optional Claude verification, deterministic health and email checks, schedules, audit, and verified deploy gates.",
+  "version": "0.4.3",
+  "description": "AMH WT Cloudflare Ops MCP v0.4.3: one-click per-user OAuth with automatic connector readiness, plus a private SafeTry Agent Harness with reusable process skills, Google source tracing, optional Claude verification, deterministic health/email checks, audit, and verified deploy gates.",
   "type": "module",
   "main": "src/index.js",
   "exports": {
@@ -24,8 +24,8 @@
     "oauth:create": "node scripts/cloudflare-oauth-create.mjs",
     "oauth:create:deploy": "node scripts/cloudflare-oauth-create.mjs %CLOUDFLARE_ACCOUNT_ID% %CLOUDFLARE_OPS_WORKER_ORIGIN% --deploy",
     "verify:live": "node scripts/verify-live.mjs",
-    "worker:deploy:verified": "node scripts/deploy-verified.mjs --dir worker --url https://cfops.nothingunseen.com/?format=json --expect 0.4.2",
-    "agent:deploy:verified": "node scripts/deploy-verified.mjs --dir agent --url auto --path /health --expect 0.1.2"
+    "worker:deploy:verified": "node scripts/deploy-verified.mjs --dir worker --url https://cfops.nothingunseen.com/?format=json --expect 0.4.3",
+    "agent:deploy:verified": "node scripts/deploy-verified.mjs --dir agent --url auto --path /health --expect 0.1.3"
   },
   "engines": {
     "node": ">=18"
