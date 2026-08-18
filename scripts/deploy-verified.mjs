@@ -13,15 +13,24 @@ let publicUrl = option(args, "--url", "auto");
 const publicPath = option(args, "--path", "/");
 const expect = option(args, "--expect", "");
 if (!relativeDir) {
-  console.error("Usage: node scripts/deploy-verified.mjs --dir worker --url https://example.com/?format=json --expect 0.4.0");
+  console.error("Usage: node scripts/deploy-verified.mjs --dir worker --url https://example.com/?format=json --expect 0.4.1");
   process.exit(2);
 }
 const cwd = path.resolve(process.cwd(), relativeDir);
-const executable = process.platform === "win32" ? "npx.cmd" : "npx";
+const launcher = process.platform === "win32"
+  ? {
+      executable: process.execPath,
+      args: [
+        path.join(path.dirname(process.env.npm_execpath || path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js")), "npx-cli.js"),
+        "wrangler",
+        "deploy",
+      ],
+    }
+  : { executable: "npx", args: ["wrangler", "deploy"] };
 const childEnv = { ...process.env };
 delete childEnv.CLOUDFLARE_API_TOKEN;
 let output = "";
-const child = spawn(executable, ["wrangler", "deploy"], { cwd, env: childEnv, stdio: ["inherit", "pipe", "pipe"], windowsHide: true });
+const child = spawn(launcher.executable, launcher.args, { cwd, env: childEnv, stdio: ["inherit", "pipe", "pipe"], windowsHide: true });
 for (const stream of [child.stdout, child.stderr]) {
   stream.on("data", (chunk) => {
     const value = chunk.toString();

@@ -40,7 +40,7 @@ import {
 const SERVER = {
   name: "cloudflare-ops-mcp",
   title: "AMH WT Cloudflare Ops MCP — SafeTry Agent Harness",
-  version: "0.4.0",
+  version: "0.4.1",
 };
 const PROTOCOL_FALLBACK = "2025-06-18";
 
