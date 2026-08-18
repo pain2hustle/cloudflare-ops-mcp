@@ -8,6 +8,7 @@ import { CAPABILITY_TREE, LEARNING_LOG, MEMORY_SCHEMA, templateList } from "./te
 import { renderConsole } from "./ui.js";
 import { cloudflareMcpList } from "./mcp-catalog.js";
 import { skillList } from "./skill-catalog.js";
+import { WT_CONSOLE_HTML } from "./wt-console.js";
 
 export { Coordinator, EmailVerifier };
 
@@ -33,7 +34,14 @@ function securityHeaders(response, request) {
   try { if (request && OAUTH_CALLBACK_RE.test(new URL(request.url).pathname)) coop = "unsafe-none"; } catch {}
   headers.set("cross-origin-opener-policy", coop);
   headers.set("cross-origin-resource-policy", "same-origin");
-  headers.set("content-security-policy", "default-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://challenges.cloudflare.com; worker-src 'self' blob: https://challenges.cloudflare.com; child-src 'self' blob: https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'");
+  // The WT operator console (/console) loads Google Fonts + the walrus image from the
+  // static Pages origin; widen only those source lists for that one path.
+  let isConsole = false;
+  try { isConsole = new URL(request.url).pathname === "/console"; } catch {}
+  const styleSrc = isConsole ? "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com" : "style-src 'self' 'unsafe-inline'";
+  const fontSrc = isConsole ? "font-src 'self' https://fonts.gstatic.com" : "font-src 'self'";
+  const imgSrc = isConsole ? "img-src 'self' data: https://wt-console.pages.dev" : "img-src 'self' data:";
+  headers.set("content-security-policy", `default-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://challenges.cloudflare.com; worker-src 'self' blob: https://challenges.cloudflare.com; child-src 'self' blob: https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; ${styleSrc}; ${imgSrc}; ${fontSrc}`);
   headers.set("x-robots-tag", "noindex, nofollow, noarchive");
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
@@ -259,6 +267,14 @@ async function privateApi(request, env, session) {
     const dashboard = await agent.dashboard();
     return json({ ...dashboard, catalog: { templates: templateList(), skills: skillList(), capability_tree: CAPABILITY_TREE, learning_log: LEARNING_LOG, memory_schema: MEMORY_SCHEMA, capabilities: capabilitySummary(), safety_flow: SAFETRY_FLOW, cloudflare_mcp: cloudflareMcpList() }, cloudflare_mcp: await agent.cloudflareMcpStatus() });
   }
+  // Operator-crew view for the hosted WT console: an authenticated session IS the operator
+  // (OAuth is gated by the access key), so it may read the operator coordinator's full crew.
+  if (request.method === "GET" && url.pathname === "/api/console") {
+    const opActor = (await hashIdentity(env.HARNESS_ACTOR || "private-admin")).slice(0, 40);
+    const op = await coordinator(env, opActor);
+    const dashboard = await op.dashboard();
+    return json({ ...dashboard, catalog: { templates: templateList(), skills: skillList(), capability_tree: CAPABILITY_TREE, learning_log: LEARNING_LOG, memory_schema: MEMORY_SCHEMA, capabilities: capabilitySummary(), safety_flow: SAFETRY_FLOW, cloudflare_mcp: cloudflareMcpList() }, cloudflare_mcp: await op.cloudflareMcpStatus() });
+  }
   if (request.method === "GET" && /^\/api\/jobs\/[^/]+$/.test(url.pathname)) {
     const id = decodeURIComponent(url.pathname.split("/").pop());
     const job = await agent.getJob(id);
@@ -336,6 +352,9 @@ async function fetchHandler(request, env) {
   }
   if (request.method === "GET" && url.pathname === "/") {
     return new Response(renderConsole({ turnstileSitekey: env.TURNSTILE_SITEKEY || "" }), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+  }
+  if (request.method === "GET" && url.pathname === "/console") {
+    return new Response(WT_CONSOLE_HTML, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
   }
   if (request.method === "GET" && url.pathname === "/health") {
     return json({ ok: true, service: "AMH WT MCP Agent Console", version: "0.1.4", turnstile_configured: !!(env.TURNSTILE_SITEKEY && env.TURNSTILE_SECRET), auth_configured: !!(env.HARNESS_ACCESS_KEY && env.SESSION_SIGNING_KEY), storage: "Cloudflare Durable Objects encrypted at rest", agent_routes_public: false });
