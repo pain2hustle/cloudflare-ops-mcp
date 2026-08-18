@@ -6,6 +6,8 @@
 
 <p align="center"><sub><strong>WT WALRUS TOOTH</strong></sub></p>
 
+<p align="center"><a href="https://artificialmindhive.com/WalrusTooth"><strong>🦣 artificialmindhive.com/WalrusTooth</strong></a> · <a href="https://artificialmindhive.com/wtfaq">FAQ</a> · <a href="https://artificialmindhive.com/wtdocs">Docs</a></p>
+
 # AMH Cloudflare Ops MCP by WT
 
 **An approval-gated Cloudflare operations suite with an optional private Agent Harness: bounded delegation, deterministic verification, OAuth-isolated MCP tools, and verified deploy checks without handing agents raw account credentials.**
