@@ -1,0 +1,32 @@
+{
+  "schema_version": "amh.wt.knowledge.v1",
+  "kind": "lesson",
+  "exported_at": "2026-08-18T04:15:00Z",
+  "site": "cloudflare-ops-mcp",
+  "source": "master session 2026-08-18 - security_review template first run",
+  "taught_by": "master",
+  "lessons": [
+    {
+      "id": "match-model-lane-to-schema-strictness",
+      "title": "A strict output schema needs a model strong enough to hold it; the free lane will fail clean, not degrade",
+      "problem": "The security_review template requires findings with an acknowledged packet hash plus several required arrays (claims, gaps, contradictions, proposed_revisions) and a bounded confidence. The free-lane model (@cf/zai-org/glm-4.7-flash) could not reliably produce that shape: it dropped the packet-hash echo and required fields.",
+      "method": [
+        "Mark judgment-heavy templates with prefersProfile 'paid-k2' so operators know the free lane is not enough.",
+        "Trust the coordinator's schema rejection: it retried three times and failed the job rather than emitting malformed findings. That is correct behavior, not a bug.",
+        "When a job fails on schema validation repeatedly with the same model, the fix is a stronger model lane, not loosening the schema."
+      ],
+      "signals_it_applies": [
+        "job_failed with 'schema validation failed: packet acknowledgement hash does not match; ... is required'",
+        "the same small model fails the same way on retry",
+        "the template demands structured findings, citations, or exact field echoes"
+      ],
+      "hard_nos": [
+        "Do not loosen the result schema just to make a weak model pass - that would let malformed or unsourced findings through",
+        "Do not report a security finding the verifier could not confirm as if it were confirmed",
+        "Do not treat a clean multi-retry failure as the system being broken"
+      ],
+      "evidence": "cloudflare-ops-mcp 2026-08-18: security_review job e77f646a on a deliberately vulnerable password-change endpoint; free GLM-4.7-flash failed the findings schema 3x and the job failed clean with 0 fabricated claims. Template now marked prefersProfile paid-k2."
+    }
+  ],
+  "note": "Redacted lesson entry. No OAuth records, connector keys, secret values, raw source bodies, client IPs, or cookies."
+}
