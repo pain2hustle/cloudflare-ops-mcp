@@ -341,7 +341,7 @@ export default {
   },
   async email(message, env) {
     await routeAgentEmail(message, env, {
-      resolver: createCatchAllEmailResolver("EmailVerifier", "loopback"),
+      resolver: createCatchAllEmailResolver("EMAIL_VERIFIERS", "loopback"),
       onNoRoute: (email) => email.setReject("Unknown verification address"),
     });
   },
