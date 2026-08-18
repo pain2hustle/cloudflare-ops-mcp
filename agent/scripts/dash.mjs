@@ -49,8 +49,8 @@ const PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta n
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
 .wrap{max-width:1100px;margin:0 auto;padding:20px}
 .top{display:flex;align-items:center;gap:14px;margin-bottom:6px}
-.amh{width:46px;height:46px;border-radius:13px;flex:0 0 auto}
-.wt{height:40px;width:auto;margin-left:auto;border-radius:8px}
+.amh{width:34px;height:38px;flex:0 0 auto;background:#fff;padding:8px 10px;border-radius:12px;box-sizing:content-box}
+.wt{height:72px;width:auto;margin-left:auto;border-radius:12px}
 .mark{display:inline-grid;place-items:center;width:38px;height:38px;border-radius:11px;background:var(--green);color:#062013;font-weight:900}
 h1{font-size:1.15rem;margin:0}.byline{color:var(--muted);font-size:.72rem;letter-spacing:.06em;margin-top:2px}
 .sub{color:var(--muted);font-size:.82rem;margin:2px 0 16px}
@@ -76,17 +76,29 @@ h2{font-size:.95rem;margin:0 0 10px}h3{font-size:.8rem;letter-spacing:.1em;text-
 .agent .role{color:var(--muted);font-size:.82rem}
 .how{color:var(--muted);font-size:.85rem}.how code{background:#051008;padding:1px 6px;border-radius:6px;color:var(--green)}
 .empty{color:var(--muted)}
+.dim{color:var(--muted);font-weight:400;font-size:.8rem}
+.today{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.stat{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px 16px;min-width:120px}
+.stat .n{font-size:1.5rem;font-weight:900;color:var(--green)}.stat .l{color:var(--muted);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:720px){.grid2{grid-template-columns:1fr}}
+.caplist{margin:0;padding-left:18px}.caplist li{margin:5px 0;color:var(--ink)}.caplist.no li{color:var(--red)}
+.proj{margin:14px 0 6px;font-weight:800;color:var(--gold);font-size:.9rem;border-bottom:1px solid var(--line);padding-bottom:4px}
+.params{margin-top:6px;font-size:.8rem;color:var(--muted);background:#051008;border-radius:8px;padding:8px 10px}
+.params b{color:var(--ink);font-weight:700}
+.amt{float:right;color:var(--green);font-weight:800;font-size:.85rem}
 </style></head><body><div class="wrap">
 <div class="top">
-<svg class="amh" viewBox="0 0 512 512" role="img" aria-label="Artificial Mind Hive"><defs><linearGradient id="abg" x1="64" y1="48" x2="448" y2="464" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f8fffb"/><stop offset=".45" stop-color="#8fffe0"/><stop offset="1" stop-color="#60a5fa"/></linearGradient><linearGradient id="aedge" x1="96" y1="80" x2="416" y2="432" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#3ef2a2"/></linearGradient><filter id="aglow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="12" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect width="512" height="512" rx="108" fill="url(#abg)"/><rect x="44" y="44" width="424" height="424" rx="84" fill="none" stroke="url(#aedge)" stroke-width="10"/><g fill="#06110d"><g transform="translate(0,57) scale(0.78)"><path d="M105 356 164 152h48l59 204h-44l-13-52h-55l-13 52h-41Zm64-91h35l-17-70h-1l-17 70Zm122 91V152h44l40 83 40-83h44v204h-42V232l-30 62h-25l-30-62v124h-41Z"/></g><path d="M338 176h30v64h37v-64h30v159h-30v-66h-37v66h-30V176Z"/></g><path d="M92 102h328M92 410h328" stroke="#fff" stroke-width="8" stroke-linecap="round" opacity="0.55" filter="url(#aglow)"/><circle cx="413" cy="104" r="16" fill="#fff" opacity="0.9" filter="url(#aglow)"/></svg>
-<div><h1>AMH · MCP Agent Console</h1><div class="byline">Artificial Mind Hive &middot; by Service Pricer LLC&trade;</div></div>
+<svg class="amh" viewBox="0 0 56 64" role="img" aria-label="Artificial Mind Hive"><defs><linearGradient id="ahoney" x1="0" y1="0" x2="56" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#ffd24d"/><stop offset="55%" stop-color="#f5b800"/><stop offset="100%" stop-color="#a87a0c"/></linearGradient><radialGradient id="aglow2" cx="50%" cy="40%" r="60%"><stop offset="0%" stop-color="#fff8e1" stop-opacity="0.65"/><stop offset="100%" stop-color="#f5b800" stop-opacity="0"/></radialGradient></defs><polygon points="28,2 54,17 54,47 28,62 2,47 2,17" fill="url(#ahoney)" stroke="#7c5908" stroke-width="1.25"/><polygon points="28,2 54,17 54,47 28,62 2,47 2,17" fill="url(#aglow2)"/><path d="M18 46 L28 18 L38 46 M22 38 L34 38" stroke="#0e1411" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="28" cy="11" r="2.6" fill="#0e1411"/><circle cx="28" cy="11" r="1.1" fill="#f5b800"/></svg>
+<div><h1>Artificial Mind Hive</h1><div class="byline">MCP Agent Console &middot; by Service Pricer LLC&trade;</div></div>
 <img class="wt" src="/wt.png" alt="WT walrus">
 </div>
 <div class="sub" id="sub">connecting…</div>
-<div class="tabs"><button class="tab active" data-t="jobs">Live jobs</button><button class="tab" data-t="agents">Agents</button><button class="tab" data-t="skills">Skills &amp; templates</button></div>
+<div id="today" class="today"></div>
+<div class="tabs"><button class="tab active" data-t="jobs">Live jobs</button><button class="tab" data-t="agents">Crew</button><button class="tab" data-t="skills">Skills &amp; templates</button><button class="tab" data-t="how">How it works</button></div>
 <div class="pane active" data-p="jobs"><div class="card"><h2>What the crew is doing</h2><div id="jobs"><span class="empty">Loading…</span></div></div></div>
-<div class="pane" data-p="agents"><div class="card"><h2>The crew</h2><div id="agents"><span class="empty">Loading…</span></div></div></div>
-<div class="pane" data-p="skills"><div class="card"><h2>Skills &amp; templates — what they do and how to use them</h2><div id="skills"><span class="empty">Loading…</span></div></div></div>
+<div class="pane" data-p="agents"><div class="card"><h2>The crew &mdash; who they are and what they have done</h2><div id="agents"><span class="empty">Loading…</span></div></div></div>
+<div class="pane" data-p="skills"><div class="card"><h2>Process skills <span class="dim">auto-selected per job, reviewable, never self-applied</span></h2><div id="skills"><span class="empty">Loading…</span></div></div><div class="card"><h2>Templates <span class="dim">the job types the crew can run</span></h2><div id="templates"><span class="empty">Loading…</span></div></div></div>
+<div class="pane" data-p="how"><div class="grid2"><div class="card"><h2>What every worker CAN do</h2><ul id="capCan" class="caplist"></ul></div><div class="card"><h2>What it can NEVER do</h2><ul id="capNo" class="caplist no"></ul></div></div><div class="card"><h2>Escalates to a human when…</h2><ul id="capEsc" class="caplist"></ul></div><div class="card"><h2>What the crew has learned <span class="dim">versioned, reviewed lessons</span></h2><div id="learned"><span class="empty">Loading…</span></div></div></div>
 <div class="foot">
 <a class="nu" href="https://nothingunseen.com" target="_blank" rel="noopener"><svg viewBox="0 0 512 512"><defs><linearGradient id="ng" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd27a"/><stop offset="1" stop-color="#f59e0b"/></linearGradient></defs><rect width="512" height="512" rx="96" fill="#0a0a0f"/><rect x="150" y="120" width="150" height="272" rx="10" fill="none" stroke="url(#ng)" stroke-width="14"/><circle cx="278" cy="262" r="11" fill="url(#ng)"/><text x="330" y="300" font-family="Arial" font-weight="800" font-size="150" fill="url(#ng)">&#957;</text></svg> Nothing Unseen</a>
 <div class="legal">
@@ -96,7 +108,7 @@ h2{font-size:.95rem;margin:0 0 10px}h3{font-size:.8rem;letter-spacing:.1em;text-
 <a href="https://artificialmindhive.com/security.html" target="_blank" rel="noopener">Security</a>
 <a href="https://artificialmindhive.com/accessibility.html" target="_blank" rel="noopener">Accessibility</a>
 </div>
-<div>AMH &mdash; Artificial Mind Hive &middot; Service Pricer LLC&trade;</div>
+<div><a href="https://artificialmindhive.com" target="_blank" rel="noopener">AMH &mdash; Artificial Mind Hive &middot; Service Pricer LLC&trade;</a></div>
 <div class="amhmark">-/\\-\\ M H // WT</div>
 </div>
 </div>
@@ -104,21 +116,36 @@ h2{font-size:.95rem;margin:0 0 10px}h3{font-size:.8rem;letter-spacing:.1em;text-
 const STAGE={job_created:5,job_enqueued:8,safety_preflight:12,job_started:16,crawl_start:22,crawl_complete:38,primary_started:48,primary_completed:66,verifier_started:76,verifier_completed:90,revision_proposed:94,site_healthy:96,site_alert:96,site_recovered:96,job_completed:100,job_failed:100,job_cancelled:100};
 const $=id=>document.getElementById(id);
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('active',p.dataset.p===b.dataset.t))});
-function pct(job,events){const evs=(events||[]).filter(e=>e.job_id===job.id);for(const e of evs){if(STAGE[e.kind]!=null)return STAGE[e.kind]}if(job.status==='completed')return 100;if(job.status==='failed')return 100;return 5}
+const esc=s=>String(s==null?'':s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'})[c]);
+function pct(job,events){const evs=(events||[]).filter(e=>e.job_id===job.id);let best=5;for(const e of evs){if(STAGE[e.kind]!=null)best=STAGE[e.kind]}if(job.status==='completed'||job.status==='failed'||job.status==='cancelled')return 100;return best}
 function stageName(job,events){const evs=(events||[]).filter(e=>e.job_id===job.id);return evs.length?evs[evs.length-1].kind.replace(/_/g,' '):(job.status||'queued')}
 function tnum(j){return Date.parse(j.updated_at||j.created_at||0)||0}
+function project(j){const p=j.packet||{};const dm=(p.allowed_domains||[])[0];return dm||(p.template_id==='cloudflare_diagnose'?'Cloudflare':'General');}
+function aiCalls(j,events){return (events||[]).filter(e=>e.job_id===j.id&&e.kind==='job_completed').reduce((n,e)=>n+Number(e.data&&e.data.ai_calls||0),0);}
 async function load(){
   let d;try{const r=await fetch('/d/dashboard');d=await r.json()}catch(e){$('sub').textContent='cannot reach harness: '+e.message;return}
-  $('sub').textContent='live · '+(d.usage?('today '+ (d.usage.daily_calls??0) +'/'+(d.usage.daily_limit??8)+' AI calls · '):'')+'auto-refresh 3s · local, no login';
-  // jobs
-  const jobs=(d.jobs||[]).slice();const run=jobs.filter(j=>['queued','running'].includes(j.status)).sort((a,b)=>tnum(b)-tnum(a));const done=jobs.filter(j=>!['queued','running'].includes(j.status)).sort((a,b)=>tnum(b)-tnum(a));
+  const u=d.usage||{};const used=u.daily_calls??u.calls??((u.primary_calls||0)+(u.verifier_calls||0));const lim=u.daily_limit??u.limit??8;
+  $('sub').textContent='live · auto-refresh 3s · local, no login · model lane: '+(u.profile||'free');
+  const jobs=(d.jobs||[]).slice();
+  // today stats
+  $('today').innerHTML=[['n:'+used+' / '+lim,'AI calls today'],['n:'+(u.zero_ai_jobs??0),'zero-AI jobs'],['n:'+jobs.length,'jobs total'],['n:'+((d.agent_profiles||[]).length),'agents'],['n:'+((d.schedules||[]).length),'schedules']].map(s=>'<div class="stat"><div class="n">'+esc(s[0].slice(2))+'</div><div class="l">'+s[1]+'</div></div>').join('');
+  // jobs grouped by project
+  const run=jobs.filter(j=>['queued','running'].includes(j.status)).sort((a,b)=>tnum(b)-tnum(a));const done=jobs.filter(j=>!['queued','running'].includes(j.status)).sort((a,b)=>tnum(b)-tnum(a));
   const box=$('jobs');box.innerHTML='';
-  const sec=(title,arr)=>{if(!arr.length)return;const h=document.createElement('h3');h.textContent=title;box.appendChild(h);arr.forEach(j=>{const p=pct(j,d.events);const cls=j.status==='failed'?'fail':(j.status==='completed'||j.status==='cancelled'?'done':'run');const el=document.createElement('div');el.className='job';el.innerHTML='<div class="jobname">'+(j.packet&&j.packet.agent_name||j.packet&&j.packet.template_id||'Agent task')+'<span class="pill '+cls+'">'+j.status+'</span></div><div class="bar"><div class="fill" style="width:'+p+'%"></div></div><div class="jobmeta">'+stageName(j,d.events)+' · '+p+'% · '+(j.packet&&j.packet.template_id||'')+'</div>';box.appendChild(el)})};
-  sec('Running',run);sec('Done',done);if(!jobs.length)box.innerHTML='<span class="empty">No jobs yet. Kick one off and it shows here live.</span>';
-  // agents
-  const ab=$('agents');ab.innerHTML='';(d.agent_profiles||[]).forEach(a=>{const el=document.createElement('div');el.className='agent';el.innerHTML='<div class="jobname">'+a.name+(a.system?'<span class="pill">office manager</span>':'')+'</div><div class="role">'+(a.role_title||a.template_id||'')+' · '+(a.description||'')+'</div>';ab.appendChild(el)});if(!(d.agent_profiles||[]).length)ab.innerHTML='<span class="empty">No agents yet.</span>';
-  // skills + templates
-  const sb=$('skills');sb.innerHTML='';const tpls=(d.catalog&&d.catalog.templates)||[];tpls.forEach(t=>{const calls=t.deterministic?0:(t.verifier?2:1);const el=document.createElement('div');el.className='agent';el.innerHTML='<div class="jobname">'+t.title+' <span class="pill">'+t.id+'</span></div><div class="role">'+t.purpose+'</div><div class="how">how: run this template · '+calls+' AI call'+(calls===1?'':'s')+'/job · tools: '+(t.tools||[]).join(', ')+'</div>';sb.appendChild(el)});const sk=(d.catalog&&d.catalog.skills)||[];if(sk.length){const h=document.createElement('h3');h.textContent='Process skills (auto-selected)';sb.appendChild(h);sk.forEach(s=>{const el=document.createElement('div');el.className='agent';el.innerHTML='<div class="jobname">'+s.title+'</div><div class="role">'+s.purpose+'</div><div class="how">'+s.lane+' · auto for: '+(s.automatic_for||[]).join(', ')+'</div>';sb.appendChild(el)})}
+  const card=(j)=>{const p=pct(j,d.events);const pk=j.packet||{};const cls=j.status==='failed'?'fail':(['completed','cancelled'].includes(j.status)?'done':'run');const calls=aiCalls(j,d.events);const r=j.primary||j.compact;let res='';if(j.compact&&j.compact.checks){res=j.compact.checks.map(c=>(c.healthy?'✓':'✗')+' '+esc(c.url)+' — '+esc(c.detail)).join('<br>');}else if(r&&r.summary){res=esc(r.summary).slice(0,220);}
+    return '<div class="job"><div class="jobname">'+esc(pk.agent_name||pk.template_id||'Agent task')+'<span class="pill '+cls+'">'+j.status+'</span>'+(calls?'<span class="amt">'+calls+' AI call'+(calls===1?'':'s')+'</span>':'<span class="amt">0 AI</span>')+'</div><div class="bar"><div class="fill" style="width:'+p+'%"></div></div><div class="jobmeta">'+esc(stageName(j,d.events))+' · '+p+'% · template: '+esc(pk.template_id||'')+'</div><div class="params"><b>objective:</b> '+esc((pk.objective||'').slice(0,200))+'<br><b>domains:</b> '+esc((pk.allowed_domains||[]).join(', ')||'—')+' · <b>urls:</b> '+((pk.urls||[]).length)+' · <b>limits:</b> '+esc(JSON.stringify(pk.limits||{}))+'<br><b>hashes:</b> packet '+esc(String(j.packet_hash||'').slice(0,12))+'… memory '+esc(String(j.memory_hash||'').slice(0,12))+'…'+(res?'<br><b>result:</b> '+res:'')+'</div></div>';};
+  const group=(title,arr)=>{if(!arr.length)return;box.insertAdjacentHTML('beforeend','<h3>'+title+'</h3>');const byP={};arr.forEach(j=>{(byP[project(j)]=byP[project(j)]||[]).push(j)});Object.keys(byP).sort().forEach(pr=>{box.insertAdjacentHTML('beforeend','<div class="proj">'+esc(pr)+' · '+byP[pr].length+'</div>');byP[pr].forEach(j=>box.insertAdjacentHTML('beforeend',card(j)))})};
+  group('Running now',run);group('Done',done);if(!jobs.length)box.innerHTML='<span class="empty">No jobs yet. Kick one off and it shows here live, grouped by project.</span>';
+  // per-agent amounts
+  const per={};jobs.forEach(j=>{const n=(j.packet&&j.packet.agent_name)||'—';per[n]=per[n]||{jobs:0,calls:0};per[n].jobs++;per[n].calls+=aiCalls(j,d.events)});
+  const ab=$('agents');ab.innerHTML='';(d.agent_profiles||[]).forEach(a=>{const s=per[a.name]||{jobs:0,calls:0};ab.insertAdjacentHTML('beforeend','<div class="agent"><div class="jobname">'+esc(a.name)+(a.system?'<span class="pill">office manager</span>':'')+'<span class="amt">'+s.jobs+' job'+(s.jobs===1?'':'s')+' · '+s.calls+' AI</span></div><div class="role">'+esc(a.role_title||a.template_id||'')+' — '+esc(a.description||'')+'</div></div>')});if(!(d.agent_profiles||[]).length)ab.innerHTML='<span class="empty">No agents yet.</span>';
+  // process skills + templates (full detail)
+  const cat=d.catalog||{};const sb=$('skills');sb.innerHTML='';(cat.skills||[]).forEach(s=>sb.insertAdjacentHTML('beforeend','<div class="agent"><div class="jobname">'+esc(s.title)+' <span class="pill">'+esc(s.id||'')+'</span></div><div class="role">'+esc(s.purpose)+'</div><div class="how">lane: '+esc(s.lane||'')+' · tools: '+esc((s.tools||[]).join(', ')||'—')+' · auto for: '+esc((s.automatic_for||[]).join(', ')||'—')+' · '+esc(s.folder||'')+'</div></div>'));if(!(cat.skills||[]).length)sb.innerHTML='<span class="empty">No skills.</span>';
+  const tb=$('templates');tb.innerHTML='';(cat.templates||[]).forEach(t=>{const calls=t.deterministic?0:(t.verifier?2:1);tb.insertAdjacentHTML('beforeend','<div class="agent"><div class="jobname">'+esc(t.title)+' <span class="pill">'+esc(t.id)+'</span>'+(t.prefersProfile?'<span class="pill fail">needs '+esc(t.prefersProfile)+'</span>':'')+'</div><div class="role">'+esc(t.purpose)+'</div><div class="how">'+calls+' AI call'+(calls===1?'':'s')+'/job · tools: '+esc((t.tools||[]).join(', '))+(t.verifier?' · independent verifier':'')+(t.deterministic?' · zero-AI deterministic':'')+'</div></div>')});
+  // how it works — capability tree + learning log
+  const ct=cat.capability_tree||{};const fill=(id,arr)=>{const el=$(id);if(!el)return;el.innerHTML=(arr||[]).map(x=>'<li>'+esc(x)+'</li>').join('')||'<li class="dim">—</li>'};
+  fill('capCan',ct.can);fill('capNo',ct.cannot);fill('capEsc',ct.escalates_when);
+  const lb=$('learned');lb.innerHTML='';(cat.learning_log||[]).forEach(l=>lb.insertAdjacentHTML('beforeend','<div class="agent"><div class="jobname">'+esc(l.added)+' <span class="pill">v'+esc(l.version||'')+'</span></div><div class="role">'+esc(l.meaning)+'</div></div>'));if(!(cat.learning_log||[]).length)lb.innerHTML='<span class="empty">No lessons yet.</span>';
 }
 load();setInterval(load,3000);
 </script></body></html>`;
