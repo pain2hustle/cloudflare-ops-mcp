@@ -33,7 +33,7 @@ function securityHeaders(response, request) {
   try { if (request && OAUTH_CALLBACK_RE.test(new URL(request.url).pathname)) coop = "unsafe-none"; } catch {}
   headers.set("cross-origin-opener-policy", coop);
   headers.set("cross-origin-resource-policy", "same-origin");
-  headers.set("content-security-policy", "default-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'");
+  headers.set("content-security-policy", "default-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://challenges.cloudflare.com; worker-src 'self' blob: https://challenges.cloudflare.com; child-src 'self' blob: https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'");
   headers.set("x-robots-tag", "noindex, nofollow, noarchive");
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
