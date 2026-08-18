@@ -151,18 +151,48 @@ export async function setupEmailRouting(client, domain, cfg = {}, opts = {}) {
   const isVerified = (email) => verifiedSet.has(String(email || "").toLowerCase());
   const warnings = [];
 
+  // Email Routing must be ENABLED (Cloudflare MX/SPF present) or every rule is
+  // inert — it exists but no mail is ever delivered. Ensure it's on before we
+  // touch rules. Idempotent; enable is a no-op when already ready.
+  let routing_enabled = null;
+  try {
+    const status = await getRoutingStatus(client, zone_id);
+    routing_enabled = !!(status && (status.enabled === true || status.status === "ready"));
+  } catch { routing_enabled = null; }
+  if (apply && routing_enabled !== true) {
+    try {
+      await enableRouting(client, zone_id, { apply: true });
+      routing_enabled = true;
+    } catch (e) {
+      warnings.push("Could not auto-enable Email Routing: " + ((e && e.message) || e));
+    }
+  } else if (!apply && routing_enabled !== true) {
+    warnings.push("Email Routing is NOT enabled on this zone — applying will enable it (adds MX/SPF) before creating rules.");
+  }
+
   const existingRules = await listRules(client, zone_id);
   const forwards = Array.isArray(cfg.forwards) ? cfg.forwards : [];
 
   const plan = [];
   for (const fwd of forwards) {
     const existing = existingRules.find((r) => ruleMatches(r, fwd.address));
-    const desiredAction = [{ type: "forward", value: [fwd.to] }];
+    // A forward may target an email address (fwd.to) OR a Cloudflare Email Worker
+    // (fwd.worker, or fwd.to = "worker:<name>"). Worker rules need no verified
+    // destination — they route inbound mail straight into the Worker's email().
+    const workerTarget =
+      fwd.worker ||
+      (typeof fwd.to === "string" && /^worker:/i.test(fwd.to) ? fwd.to.replace(/^worker:/i, "").trim() : null);
+    const target = workerTarget || fwd.to;
+    const desiredAction = workerTarget
+      ? [{ type: "worker", value: [workerTarget] }]
+      : [{ type: "forward", value: [fwd.to] }];
     const desiredMatchers = [
       { type: "literal", field: "to", value: fwd.address },
     ];
     const body = {
-      name: `Forward ${fwd.address} to ${fwd.to}`,
+      name: workerTarget
+        ? `Route ${fwd.address} to worker ${workerTarget}`
+        : `Forward ${fwd.address} to ${fwd.to}`,
       enabled: true,
       matchers: desiredMatchers,
       actions: desiredAction,
@@ -170,21 +200,20 @@ export async function setupEmailRouting(client, domain, cfg = {}, opts = {}) {
 
     let action = "create";
     if (existing) {
-      const curTo =
-        existing.actions &&
-        existing.actions[0] &&
-        Array.isArray(existing.actions[0].value)
-          ? existing.actions[0].value
-          : [];
-      const same = curTo.length === 1 && curTo[0] === fwd.to;
+      const curAction = (existing.actions && existing.actions[0]) || {};
+      const curVal =
+        Array.isArray(curAction.value) && curAction.value.length === 1 ? curAction.value[0] : null;
+      const same = curAction.type === desiredAction[0].type && curVal === desiredAction[0].value[0];
       action = same ? "noop" : "update";
     }
 
-    const verified = isVerified(fwd.to);
+    // Worker destinations are always "verified" — no confirmation email needed.
+    const verified = workerTarget ? true : isVerified(fwd.to);
     const item = {
       action,
       address: fwd.address,
-      to: fwd.to,
+      to: target,
+      target_type: workerTarget ? "worker" : "forward",
       destinationVerified: verified,
       before: existing || null,
       after: body,
@@ -278,6 +307,7 @@ export async function setupEmailRouting(client, domain, cfg = {}, opts = {}) {
     domain,
     zone_id,
     account_id,
+    routing_enabled,
     plan,
     catchAll,
     warnings,

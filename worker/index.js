@@ -27,6 +27,8 @@ import { planPagesCutover } from "../src/pages.js";
 import { createTurnstileWidget } from "../src/turnstile.js";
 import { mintScopedToken, listTokens, revokeToken, TOKEN_PRESETS } from "../src/tokens.js";
 import { whoServesDomain, accountDoctor, pagesBranchCheck } from "../src/doctor.js";
+import { addUpstream, removeUpstream, listUpstreams, federatedTools, isFederated, callFederated } from "../src/federation.js";
+import { setPolicy, listPolicy, checkPolicy } from "../src/policy.js";
 import {
   authorizeConnector,
   getOAuthAccessToken,
@@ -40,8 +42,39 @@ import {
 const SERVER = {
   name: "cloudflare-ops-mcp",
   title: "AMH WT Cloudflare Ops MCP — SafeTry Agent Harness",
-  version: "0.4.3",
+  version: "0.5.0",
 };
+
+// ── Federation + policy management tools (front-door over a fleet of MCPs) ──
+// These are handled directly in tools/call (they bypass the CF client + the
+// policy gate) so cfops can register/govern OTHER MCP servers under one endpoint.
+const MGMT_TOOL_DEFS = [
+  {
+    name: "federation_add",
+    description: "Register an upstream MCP server so its tools appear in THIS catalog under a namespace (namespace__tool) and calls proxy to it. Args: namespace (a-z0-9_-), url (https MCP endpoint), auth (optional Bearer token/connector key).",
+    inputSchema: { type: "object", properties: { namespace: { type: "string" }, url: { type: "string" }, auth: { type: "string" } }, required: ["namespace", "url"] },
+  },
+  { name: "federation_list", description: "List registered upstream MCP servers (namespace, url, whether authed).", inputSchema: { type: "object", properties: {} } },
+  { name: "federation_remove", description: "Unregister an upstream MCP server by namespace.", inputSchema: { type: "object", properties: { namespace: { type: "string" } }, required: ["namespace"] } },
+  {
+    name: "policy_set",
+    description: "Set governance policy for any tool (native or federated namespace__tool): allow | approve | block. Default is allow. 'approve' refuses the call unless it carries \"_approved\": true.",
+    inputSchema: { type: "object", properties: { tool: { type: "string" }, mode: { type: "string", enum: ["allow", "approve", "block"] } }, required: ["tool", "mode"] },
+  },
+  { name: "policy_list", description: "List all non-default tool policies.", inputSchema: { type: "object", properties: {} } },
+];
+const MGMT_TOOLS = new Set(MGMT_TOOL_DEFS.map((t) => t.name));
+
+async function runMgmtTool(name, args, env) {
+  switch (name) {
+    case "federation_add": return addUpstream(env, args);
+    case "federation_list": return { upstreams: await listUpstreams(env) };
+    case "federation_remove": return removeUpstream(env, args.namespace);
+    case "policy_set": return setPolicy(env, args.tool, args.mode);
+    case "policy_list": return { policies: await listPolicy(env) };
+    default: return { error: true, message: `unknown mgmt tool: ${name}` };
+  }
+}
 const PROTOCOL_FALLBACK = "2025-06-18";
 
 // ── Tool catalog (inputSchema = JSON Schema; NOTE: no token field anywhere) ──
@@ -139,11 +172,11 @@ const TOOLS = [
         domain: { type: "string" },
         forwards: {
           type: "array",
-          description: "List of { address, to } forward rules, e.g. { address: 'hello@example.com', to: 'you@gmail.com' }",
+          description: "Rules: { address, to } forwards to an email address, or { address, worker } routes to a Cloudflare Email Worker (no destination verification needed). e.g. { address: 'hello@example.com', to: 'you@gmail.com' } or { address: 'bot@example.com', worker: 'my-email-worker' }",
           items: {
             type: "object",
-            properties: { address: { type: "string" }, to: { type: "string" } },
-            required: ["address", "to"],
+            properties: { address: { type: "string" }, to: { type: "string" }, worker: { type: "string" } },
+            required: ["address"],
           },
         },
         catch_all: { type: "string", description: "Optional catch-all destination address" },
@@ -520,13 +553,38 @@ async function handleRpc(msg, env, authContext) {
     });
   }
   if (method === "ping") return rpcResult(id, {});
-  if (method === "tools/list") return rpcResult(id, { tools: TOOLS });
+  if (method === "tools/list") {
+    // Native + management tools + (best-effort) federated upstream tools. A dead
+    // upstream never breaks the catalog — federatedTools swallows its own errors.
+    let fed = [];
+    try { fed = await federatedTools(env); } catch { fed = []; }
+    return rpcResult(id, { tools: [...TOOLS, ...MGMT_TOOL_DEFS, ...fed] });
+  }
   if (method === "tools/call") {
     const toolName = params && params.name;
     const args = (params && params.arguments) || {};
-    const tool = TOOLS.find((t) => t.name === toolName);
-    if (!tool) return rpcError(id, -32602, `unknown tool: ${toolName}`);
     try {
+      // 1) Management tools (federation/policy admin) bypass the policy gate and
+      //    the CF client — so you can never lock yourself out of governance.
+      if (MGMT_TOOLS.has(toolName)) {
+        const out = await runMgmtTool(toolName, args, env);
+        return rpcResult(id, { content: [{ type: "text", text: JSON.stringify(out, null, 2) }], isError: !!(out && out.error) });
+      }
+      // 2) Policy gate — applies to every native + federated tool.
+      const gate = await checkPolicy(env, toolName, args);
+      if (!gate.allowed) {
+        return rpcResult(id, { content: [{ type: "text", text: JSON.stringify({ error: gate.reason, policy: gate.mode }, null, 2) }], isError: true });
+      }
+      // 3) Federated tool (namespace__tool) → proxy to its upstream MCP.
+      const namespaces = (await listUpstreams(env)).map((u) => u.namespace);
+      const fed = isFederated(toolName, namespaces);
+      if (fed) {
+        const out = await callFederated(env, fed.ns, fed.tool, args);
+        return rpcResult(id, { content: [{ type: "text", text: JSON.stringify(out, null, 2) }], isError: !!(out && out.error) });
+      }
+      // 4) Native cfops tool.
+      const tool = TOOLS.find((t) => t.name === toolName);
+      if (!tool) return rpcError(id, -32602, `unknown tool: ${toolName}`);
       const out = await runTool(toolName, args, env, authContext);
       const isError = !!(out && out.error);
       // Best-effort audit to observability (redacted; never the token).

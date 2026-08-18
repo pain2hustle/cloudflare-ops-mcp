@@ -100,14 +100,38 @@ export async function whoServesDomain(client, domain) {
  */
 export async function accountDoctor(client, opts = {}) {
   const { expected_account_id } = opts;
+  // Classic API tokens verify via /user/tokens/verify and list /accounts. OAuth
+  // access tokens do NEITHER — that token endpoint is API-token-namespace only,
+  // and the granted OAuth scopes (zone.read, dns.write, email-routing.*, …) don't
+  // include account enumeration. Probing only those two makes a perfectly healthy
+  // OAuth connection look like an "Invalid API Token" with zero accounts. So we
+  // ALSO probe the broadly-granted zone.read (GET /zones) and derive both liveness
+  // and the visible account set from the zones' own account objects.
   const verify = await safeRequest(client, "GET", "/user/tokens/verify");
   const accounts = await safeRequest(client, "GET", "/accounts?per_page=50");
-  const accountList = Array.isArray(accounts.result)
-    ? accounts.result.map((a) => ({ id: a.id, name: a.name }))
-    : [];
+  const zones = await safeRequest(client, "GET", "/zones?per_page=50");
+
+  const accountMap = new Map();
+  if (Array.isArray(accounts.result)) {
+    for (const a of accounts.result) accountMap.set(a.id, { id: a.id, name: a.name });
+  }
+  if (Array.isArray(zones.result)) {
+    for (const z of zones.result) {
+      const a = z && z.account;
+      if (a && a.id && !accountMap.has(a.id)) accountMap.set(a.id, { id: a.id, name: a.name });
+    }
+  }
+  const accountList = [...accountMap.values()];
+
+  const tokenLive =
+    (verify.result && verify.result.status === "active") ||
+    Array.isArray(zones.result) ||
+    Array.isArray(accounts.result);
 
   const report = {
-    token_status: verify.result && verify.result.status ? verify.result.status : verify.error || "unknown",
+    token_status: tokenLive
+      ? (verify.result && verify.result.status ? verify.result.status : "active (oauth scope)")
+      : (verify.error || accounts.error || zones.error || "unknown"),
     accounts_visible: accountList,
     expected_account_id: expected_account_id || null,
     expected_account_visible: expected_account_id

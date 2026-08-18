@@ -2,7 +2,10 @@
 // in KV; each user's opaque key maps to exactly one OAuth connection.
 const AUTH_URL = "https://dash.cloudflare.com/oauth2/auth";
 const TOKEN_URL = "https://dash.cloudflare.com/oauth2/token";
-const DEFAULT_SCOPES = ["zone.read", "dns.write", "email-routing-address.write", "email-routing-rule.write"];
+// offline_access requests a refresh token so the 1-hour access token can be
+// auto-renewed (refreshConnection) instead of the connection dying hourly and
+// forcing a manual reconnect. Without it Cloudflare returns no refresh_token.
+const DEFAULT_SCOPES = ["zone.read", "dns.write", "email-routing-address.write", "email-routing-rule.write", "offline_access"];
 const STATE_TTL_SECONDS = 600;
 const REFRESH_SKEW_MS = 60_000;
 
