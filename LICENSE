@@ -1,7 +1,13 @@
 MIT License
 
+Product: Cloudflare Ops MCP (also released as "AMH WT Cloudflare Ops MCP")
+npm package: cloudflare-ops-mcp
+MCP name: io.github.pain2hustle/cloudflare-ops-mcp
+Repository: https://github.com/pain2hustle/cloudflare-ops-mcp
+
 Copyright (c) 2026 Service Pricer LLC
-AMH — Artificial Mind Hive (Walrus Tooth / WT)
+AMH — Artificial Mind Hive, a Service Pricer LLC company
+Walrus Tooth (WT) — https://artificialmindhive.com/WalrusTooth
 Authored and maintained by Austin ("Pain2HuStle")
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,3 +27,22 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+NOTICE (not part of the MIT license terms above)
+
+The MIT license above covers the source code only. It grants no rights to the
+names, logos, or brands of Service Pricer LLC, including "Service Pricer",
+"AMH", "Artificial Mind Hive", "Walrus Tooth", and "WT". Those names and marks
+remain the property of Service Pricer LLC. Forks and derivative works must not
+use them in a way that suggests affiliation with or endorsement by
+Service Pricer LLC.
+
+This project is independent, third-party software. It is not affiliated with,
+endorsed by, sponsored by, or made by Cloudflare, Inc. "Cloudflare" and
+"Wrangler" are trademarks of Cloudflare, Inc., referenced here only to describe
+compatibility.
+
+Use of the hosted connector at cfops.nothingunseen.com is additionally governed
+by TERMS.md, PRIVACY.md, and SECURITY.md in this repository.
