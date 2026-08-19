@@ -99,5 +99,7 @@ Real credentials belong in Wrangler secrets, never in `worker/wrangler.jsonc` or
 
 ## Contact
 
-- Service Pricer: https://servicepricer.app
+- Artificial Mind Hive: https://artificialmindhive.com
+- Walrus Tooth (WT): https://artificialmindhive.com/WalrusTooth
+- Company: Service Pricer LLC - https://servicepricer.app
 - GitHub: https://github.com/pain2hustle/cloudflare-ops-mcp

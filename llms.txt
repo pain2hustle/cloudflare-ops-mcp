@@ -30,7 +30,9 @@ Cloudflare Ops MCP is made by AMH - Artificial Mind Hive, operated by Service Pr
 
 ## Contact
 
-Service Pricer: https://servicepricer.app
+Artificial Mind Hive: https://artificialmindhive.com
+Walrus Tooth (WT): https://artificialmindhive.com/WalrusTooth
+Company: Service Pricer LLC - https://servicepricer.app
 GitHub: https://github.com/pain2hustle/cloudflare-ops-mcp
 AMH GitHub: https://github.com/pain2hustle
 Public AMH-built work: https://nothingunseen.com

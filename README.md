@@ -576,16 +576,17 @@ Made by **-/\-\ M H // WT** — AMH, Artificial Mind Hive, operated by Service P
 
 ## Contact / company
 
-- Service Pricer: https://servicepricer.app
+- Artificial Mind Hive: [artificialmindhive.com](https://artificialmindhive.com)
+- Walrus Tooth (WT): [artificialmindhive.com/WalrusTooth](https://artificialmindhive.com/WalrusTooth) · [FAQ](https://artificialmindhive.com/wtfaq) · [Docs](https://artificialmindhive.com/wtdocs)
+- Company: Service Pricer LLC — [servicepricer.app](https://servicepricer.app)
 - GitHub: https://github.com/pain2hustle/cloudflare-ops-mcp
 - AMH on GitHub: [@pain2hustle](https://github.com/pain2hustle)
-- Artificial Mind Hive: [amhsiterevival.com](https://www.amhsiterevival.com/)
 - Public AMH-built work: [Nothing Unseen](https://nothingunseen.com)
 - Project policies: [Privacy](PRIVACY.md) · [Terms](TERMS.md) · [Security](SECURITY.md) · [MIT License](LICENSE)
 
 ## License
 
-MIT (c) 2026 Pain2HuStle
+MIT (c) 2026 Service Pricer LLC — AMH, Artificial Mind Hive. Authored and maintained by Austin ("Pain2HuStle").
 
 ---
 
