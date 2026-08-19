@@ -19,6 +19,12 @@ const scopes = [
   "email-routing-rule.write",
   "cache.purge",
   "challenge-widgets.write",
+  // Workers scopes — verified valid against the OAuth client API 2026-08-19.
+  // NOTE: Cloudflare exposes NO Pages scope; Pages still needs wrangler.
+  "workers-scripts.write",
+  "workers-routes.write",
+  "workers-tail.read",
+  "account-settings.read",
 ];
 
 const body = {

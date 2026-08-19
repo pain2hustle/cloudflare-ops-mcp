@@ -7,7 +7,7 @@
   "observability": { "enabled": true },
   "workers_dev": true,
   "routes": [
-    { "pattern": "cfops.nothingunseen.com/*", "zone_name": "nothingunseen.com" }
+    { "pattern": "mcp.artificialmindhive.com", "custom_domain": true }
   ],
   "kv_namespaces": [
     { "binding": "CLOUDFLARE_OPS_OAUTH", "id": "1854b6d5bc8c4860bc914412443a0172" }

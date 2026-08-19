@@ -5,7 +5,12 @@ const TOKEN_URL = "https://dash.cloudflare.com/oauth2/token";
 // offline_access requests a refresh token so the 1-hour access token can be
 // auto-renewed (refreshConnection) instead of the connection dying hourly and
 // forcing a manual reconnect. Without it Cloudflare returns no refresh_token.
-const DEFAULT_SCOPES = ["zone.read", "dns.write", "email-routing-address.write", "email-routing-rule.write", "offline_access"];
+// 2026-08-19: added the Workers scopes. Without them the connector could read
+// DNS but every Workers/Pages call returned "Authentication error" (code 10000),
+// so who_serves_domain reported "Nothing claims this domain" for domains that
+// are plainly served by a Worker. Verified against the Cloudflare OAuth client
+// API — Pages has NO valid OAuth scope, so Pages work still needs wrangler.
+const DEFAULT_SCOPES = ["zone.read", "dns.write", "email-routing-address.write", "email-routing-rule.write", "cache.purge", "challenge-widgets.write", "workers-scripts.write", "workers-routes.write", "workers-tail.read", "account-settings.read", "offline_access"];
 const STATE_TTL_SECONDS = 600;
 const REFRESH_SKEW_MS = 60_000;
 
