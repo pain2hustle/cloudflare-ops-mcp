@@ -6,7 +6,7 @@
 
 <p align="center"><sub><strong>WT WALRUS TUSK</strong></sub></p>
 
-<p align="center"><a href="https://artificialmindhive.com/WalrusTooth"><strong>🦣 artificialmindhive.com/WalrusTooth</strong></a> · <a href="https://artificialmindhive.com/wtfaq">FAQ</a> · <a href="https://artificialmindhive.com/wtdocs">Docs</a></p>
+<p align="center"><a href="https://artificialmindhive.com/WalrusTooth"><strong>🦣 Walrus Tusk home</strong></a> · <a href="https://artificialmindhive.com/wtfaq">FAQ</a> · <a href="https://artificialmindhive.com/wtdocs">Docs</a></p>
 
 # AMH Cloudflare Ops MCP by Walrus Tusk (WT)
 
