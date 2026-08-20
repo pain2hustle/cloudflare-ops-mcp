@@ -313,7 +313,14 @@ export class Coordinator extends Agent {
   }
 
   async runQueuedJob(payload) {
-    return this.runJob(payload.job_id, "scheduler");
+    try {
+      return await this.runJob(payload.job_id, "scheduler");
+    } catch {
+      // Scheduled callbacks are at-least-once. runJob already records a safe
+      // terminal failure, so acknowledge it here instead of retrying the same
+      // model call and burning the user's daily allowance again.
+      return this.getJob(payload.job_id);
+    }
   }
 
   async runJob(id, actor = "master") {
@@ -324,7 +331,7 @@ export class Coordinator extends Agent {
     if (["running", "completed"].includes(rows[0].status)) return this.getJob(id);
     const packet = parseJson(rows[0].packet_json, {});
     const utcStart = Date.parse(new Date().toISOString().slice(0, 10) + "T00:00:00Z");
-    const modelCalls = Number(rowList(this.sql`SELECT COUNT(*) AS count FROM events WHERE ts>=${utcStart} AND kind IN (${"primary_started"},${"verifier_started"})`)[0]?.count || 0);
+    const modelCalls = Number(rowList(this.sql`SELECT COUNT(*) AS count FROM events WHERE ts>=${utcStart} AND kind=${"model_invoked"}`)[0]?.count || 0);
     const neededCalls = TEMPLATES[packet.template_id]?.deterministic ? 0 : (TEMPLATES[packet.template_id]?.verifier ? 2 : 1);
     const dailyLimit = Math.max(1, Math.min(Number(this.env.MAX_DAILY_MODEL_CALLS || 8), 100));
     if (modelCalls + neededCalls > dailyLimit) throw new Error(`Daily model-call safety budget reached (${modelCalls}/${dailyLimit})`);
@@ -344,16 +351,16 @@ export class Coordinator extends Agent {
         this.sql`UPDATE jobs SET sources_json=${JSON.stringify(sources)}, updated_at=${Date.now()} WHERE id=${id}`;
         if (TEMPLATES[packet.template_id]?.deterministic) return this.completeHealthJob(id, packet, sources);
         await this.log(id, "primary_started", { model_profile: this.env.MODEL_PROFILE || "free" }, "primary");
-        const primary = await runModel(this.env, { packet, packetHash: rows[0].packet_hash, memoryHash, memory, sources, mode: "primary" });
+        const primary = await runModel(this.env, { packet, packetHash: rows[0].packet_hash, memoryHash, memory, sources, mode: "primary", cacheScope: this.name, onModelCall: (info) => this.log(id, "model_invoked", info, "primary") });
         this.sql`UPDATE jobs SET primary_json=${JSON.stringify(primary.result)}, primary_model=${primary.model}, updated_at=${Date.now()} WHERE id=${id}`;
-        await this.log(id, "primary_completed", { model: primary.model, claims: primary.result.claims.length, gaps: primary.result.gaps.length }, "primary");
+        await this.log(id, "primary_completed", { model: primary.model, cache: primary.cache, ai_calls: primary.calls, claims: primary.result.claims.length, gaps: primary.result.gaps.length }, "primary");
         let verifier = null;
         if (TEMPLATES[packet.template_id]?.verifier) {
           this.assertNotStopped(id);
           await this.log(id, "verifier_started", { independent: true }, "verifier");
-          verifier = await runModel(this.env, { packet, packetHash: rows[0].packet_hash, memoryHash, memory, sources, mode: "verify" });
+          verifier = await runModel(this.env, { packet, packetHash: rows[0].packet_hash, memoryHash, memory, sources, mode: "verify", cacheScope: this.name, onModelCall: (info) => this.log(id, "model_invoked", info, "verifier") });
           this.sql`UPDATE jobs SET verifier_json=${JSON.stringify(verifier.result)}, verifier_model=${verifier.model}, updated_at=${Date.now()} WHERE id=${id}`;
-          await this.log(id, "verifier_completed", { model: verifier.model, claims: verifier.result.claims.length, gaps: verifier.result.gaps.length }, "verifier");
+          await this.log(id, "verifier_completed", { model: verifier.model, cache: verifier.cache, ai_calls: verifier.calls, claims: verifier.result.claims.length, gaps: verifier.result.gaps.length }, "verifier");
         }
         for (const proposal of [...(primary.result.proposed_revisions || []), ...(verifier?.result?.proposed_revisions || [])]) {
           const candidate = { ...proposal, target_skill: cleanText(proposal.target_skill, 80) || packet.skill_ids?.[0] || "cfops-context-handoff" };
@@ -372,7 +379,8 @@ export class Coordinator extends Agent {
         this.sql`UPDATE jobs SET status=${"completed"}, compact_json=${JSON.stringify(compact)}, updated_at=${Date.now()} WHERE id=${id}`;
         this.sql`UPDATE agent_versions SET completed_jobs=completed_jobs+1, verifier_runs=verifier_runs+${verifier ? 1 : 0}, confidence_sum=confidence_sum+${Number(primary.result.confidence || 0)} WHERE version=${HARNESS_VERSION}`;
         const usage = await this.usageSummary();
-        await this.log(id, "job_completed", { verifier: !!verifier, ai_calls: verifier ? 2 : 1, daily_calls: usage.harness_calls, daily_limit: usage.harness_call_limit, agent_name: packet.agent_name }, "coordinator");
+        const actualCalls = Number(primary.calls || 0) + Number(verifier?.calls || 0);
+        await this.log(id, "job_completed", { verifier: !!verifier, ai_calls: actualCalls, cache: { primary: primary.cache, verifier: verifier?.cache || null }, daily_calls: usage.harness_calls, daily_limit: usage.harness_call_limit, agent_name: packet.agent_name }, "coordinator");
         this.setState({ ...this.state, status: "ready", active_job_id: null });
         return this.getJob(id);
       });
@@ -621,8 +629,8 @@ export class Coordinator extends Agent {
   async usageSummary() {
     const start = Date.parse(new Date().toISOString().slice(0, 10) + "T00:00:00Z");
     const counts = rowList(this.sql`SELECT
-      SUM(CASE WHEN kind=${"primary_started"} THEN 1 ELSE 0 END) AS primary_calls,
-      SUM(CASE WHEN kind=${"verifier_started"} THEN 1 ELSE 0 END) AS verifier_calls,
+      SUM(CASE WHEN kind=${"model_invoked"} AND json_extract(data_json,'$.mode')=${"primary"} THEN 1 ELSE 0 END) AS primary_calls,
+      SUM(CASE WHEN kind=${"model_invoked"} AND json_extract(data_json,'$.mode')=${"verify"} THEN 1 ELSE 0 END) AS verifier_calls,
       SUM(CASE WHEN kind=${"job_completed"} AND json_extract(data_json,'$.ai_calls')=0 THEN 1 ELSE 0 END) AS zero_ai_jobs
       FROM events WHERE ts>=${start}`)[0] || {};
     const calls = Number(counts.primary_calls || 0) + Number(counts.verifier_calls || 0);
@@ -631,8 +639,8 @@ export class Coordinator extends Agent {
     return {
       date_utc: new Date(start).toISOString().slice(0, 10),
       model_profile: profile,
-      primary_model: profile === "paid-k2" ? (this.env.PRIMARY_MODEL || "@cf/moonshotai/kimi-k2.6") : (this.env.FREE_PRIMARY_MODEL || "@cf/zai-org/glm-4.7-flash"),
-      verifier_model: profile === "paid-k2" ? (this.env.PRIMARY_MODEL || "@cf/moonshotai/kimi-k2.6") : (this.env.FREE_VERIFIER_MODEL || "@cf/google/gemma-4-26b-a4b-it"),
+      primary_model: profile === "paid-k2" ? (this.env.PRIMARY_MODEL || "@cf/moonshotai/kimi-k2.6") : (this.env.FREE_PRIMARY_MODEL || "@cf/meta/llama-3.1-8b-instruct-fast"),
+      verifier_model: profile === "paid-k2" ? (this.env.PRIMARY_MODEL || "@cf/moonshotai/kimi-k2.6") : (this.env.FREE_VERIFIER_MODEL || "@cf/meta/llama-3.1-8b-instruct-fast"),
       harness_calls: calls,
       harness_call_limit: limit,
       harness_calls_remaining: Math.max(0, limit - calls),

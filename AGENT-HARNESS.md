@@ -13,7 +13,9 @@ The harness is a companion Cloudflare Worker. It does not expose a generic shell
 
 ## Cost controls
 
-The default `MODEL_PROFILE=free` uses GLM Flash for the primary pass and Gemma for independent verification. `paid-k2` enables Kimi K2.6 only on Workers Paid. The console shows exact harness calls, remaining daily calls, zero-AI jobs, and the 00:00 UTC reset. It does not guess neuron consumption; exact neurons stay in Workers AI analytics.
+The default `MODEL_PROFILE=free` uses Cloudflare's JSON-mode-compatible Llama 3.1 8B Fast in separate primary and verifier passes so strict evidence packets work on Workers Free. `paid-k2` enables structured-output Kimi K2.6 only on Workers Paid or eligible prepaid AI Gateway credits. The console shows exact harness calls, remaining daily calls, zero-AI jobs, and the 00:00 UTC reset. It does not guess neuron consumption; exact neurons stay in Workers AI analytics.
+
+An optional local lane is planned for operators who already have Ollama and a compatible Gemma, Qwen, or other model installed. It will be an explicit local bridge/CLI choice that reuses the harness's allowlisted job contracts and audit boundaries. It will not expose Ollama through a Wrangler route, service binding, tunnel, or public port; a hosted Worker cannot directly call a user's `localhost`.
 
 `site_health` is deterministic: plain HTTPS fetch, HTTP code, redirect, TLS failure, and optional expected-text marker. It never starts Playwright or a model. A scheduled health watch can run hourly; research schedules show their calls per run before enabling.
 

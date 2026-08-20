@@ -4,6 +4,7 @@ Cloudflare Ops MCP's direction is simple: make Cloudflare operations safe enough
 
 ## Next upgrades
 
+- Opt-in local-model lane for operators who already run Ollama with models such as Gemma or Qwen. A local bridge may call the same allowlisted harness contracts, but Wrangler must never publish an Ollama port and the hosted Worker must never assume it can reach a user's loopback address.
 - One-command project initializer: create Worker config, generate MCP access key, guide Cloudflare token/OAuth setup, and store secrets through Wrangler.
 - Better plain-English plans: show "what changes", "why it matters", and "what can go wrong".
 - HTML report output for clients and small-business owners.

@@ -13,7 +13,7 @@ let publicUrl = option(args, "--url", "auto");
 const publicPath = option(args, "--path", "/");
 const expect = option(args, "--expect", "");
 if (!relativeDir) {
-  console.error("Usage: node scripts/deploy-verified.mjs --dir worker --url https://example.com/?format=json --expect 0.4.2");
+  console.error("Usage: node scripts/deploy-verified.mjs --dir worker --url https://example.com/?format=json --expect 0.5.0");
   process.exit(2);
 }
 const cwd = path.resolve(process.cwd(), relativeDir);

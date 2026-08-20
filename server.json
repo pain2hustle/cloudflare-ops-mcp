@@ -3,7 +3,7 @@
   "name": "io.github.pain2hustle/cloudflare-ops-mcp",
   "title": "AMH WT Cloudflare Ops MCP — SafeTry Agent Harness",
   "description": "OAuth-isolated, approval-gated Cloudflare operations for DNS, email, Pages, cache, Turnstile, tokens, and account diagnostics, with an optional private SafeTry Agent Harness for bounded research, independent verification, deterministic health checks, schedules, audit, and verified deploy gates.",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "repository": {
     "url": "https://github.com/pain2hustle/cloudflare-ops-mcp",
     "source": "github"

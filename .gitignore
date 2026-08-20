@@ -4,6 +4,7 @@ agent/local-stashes/**
 .env.local
 node_modules
 *.log
+*.bak.*
 cfopser-audit.log
 # wrangler secrets / build artifacts (never commit a token)
 .dev.vars

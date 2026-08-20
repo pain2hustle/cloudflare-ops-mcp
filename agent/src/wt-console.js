@@ -37,7 +37,7 @@ a{color:var(--green);text-decoration:none}
 .ph b{font-family:'Archivo Black';font-size:15px;text-transform:uppercase}.ph span{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
 .pane{display:none}.pane.on{display:block}
 .proj{padding:16px 24px 4px;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--green)}
-.job{padding:20px 24px;border-top:1px solid #12281d}
+.job{padding:20px 24px;border-top:1px solid #12281d}.job.focused{background:#10251a;border-left:3px solid var(--gold);box-shadow:inset 0 0 0 1px rgba(232,184,75,.18)}
 .jt{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .jn{font-family:'Archivo Black';font-size:20px;text-transform:uppercase}
 .badge{font-size:10px;letter-spacing:.2em;text-transform:uppercase;padding:6px 11px;border:1px solid #2b5541;color:var(--green);background:rgba(76,220,130,.08)}
@@ -113,7 +113,10 @@ ul.cap{margin:0;padding:20px 24px 20px 42px}ul.cap li{margin:7px 0}ul.cap.no li{
 const STAGE={job_created:5,job_enqueued:8,safety_preflight:12,job_started:16,crawl_start:22,crawl_complete:38,primary_started:48,primary_completed:66,verifier_started:76,verifier_completed:90,revision_proposed:94,site_healthy:96,site_alert:96,site_recovered:96,job_completed:100,job_failed:100,job_cancelled:100};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'})[c]);
+const attr=s=>esc(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 const RUN=['queued','running'];
+const FOCUS_JOB=new URLSearchParams(location.search).get('job')||'';
+let focusPending=Boolean(FOCUS_JOB);
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.dataset.p===b.dataset.t));const T={jobs:'What the crew is doing',crew:'The crew',skills:'Skills & templates',how:'How it works'};$('ptitle').textContent=T[b.dataset.t]});
 function pct(job,events){const evs=(events||[]).filter(e=>e.job_id===job.id);let best=5;for(const e of evs){if(STAGE[e.kind]!=null)best=STAGE[e.kind]}if(!RUN.includes(job.status))return 100;return best}
 function stageName(job,events){const evs=(events||[]).filter(e=>e.job_id===job.id);return evs.length?evs[evs.length-1].kind.replace(/_/g,' '):(job.status||'queued')}
@@ -131,12 +134,13 @@ async function load(){
   const run=jobs.filter(j=>RUN.includes(j.status)).sort((a,b)=>tnum(b)-tnum(a));const done=jobs.filter(j=>!RUN.includes(j.status)).sort((a,b)=>tnum(b)-tnum(a));
   $('pmeta').textContent=jobs.length+' jobs · '+run.length+' running';
   const card=j=>{const p=pct(j,ev),pk=j.packet||{},run_=RUN.includes(j.status);const cls=j.status==='failed'?'fail':(run_?'run':'done');const bcls=j.status==='failed'?'fail':(['completed','cancelled'].includes(j.status)?'done':'');const calls=aiCalls(j,ev);const r=j.primary||j.compact;let res='';if(j.compact&&j.compact.checks)res=j.compact.checks.map(c=>(c.healthy?'✓':'✗')+' '+esc(c.url)+' — '+esc(c.detail)).join('<br>');else if(r&&r.summary)res=esc(r.summary).slice(0,240);
-    return '<div class="job"><div class="jt"><div style="display:flex;align-items:center;gap:12px"><span class="jn">'+esc(pk.agent_name||pk.template_id||'Agent task')+'</span><span class="badge '+bcls+'">'+esc(j.status)+'</span></div><span class="ai">'+(calls||0)+' AI</span></div>'+
+    return '<div class="job" data-job-id="'+attr(j.id)+'"><div class="jt"><div style="display:flex;align-items:center;gap:12px"><span class="jn">'+esc(pk.agent_name||pk.template_id||'Agent task')+'</span><span class="badge '+bcls+'">'+esc(j.status)+'</span></div><span class="ai">'+(calls||0)+' AI</span></div>'+
       '<div class="bar"><div class="fill '+(cls==='run'?'run':cls==='fail'?'fail':'')+'" style="width:'+p+'%"></div></div>'+
       '<div class="meta">'+esc(stageName(j,ev))+' · '+p+'% · template: <b>'+esc(pk.template_id||'')+'</b></div>'+
       '<div class="params" onclick="this.classList.toggle(&quot;open&quot;)"><div><b>objective:</b> '+esc((pk.objective||'').slice(0,160))+'</div><div class="more"><b>domains:</b> '+esc((pk.allowed_domains||[]).join(', ')||'—')+' · <b>urls:</b> '+((pk.urls||[]).length)+' · <b>limits:</b> '+esc(JSON.stringify(pk.limits||{}))+'<br><b>hashes:</b> packet '+esc(String(j.packet_hash||'').slice(0,12))+'… memory '+esc(String(j.memory_hash||'').slice(0,12))+'…'+(res?'<br><b>result:</b> '+res:'')+'</div></div></div>';};
   const grp=(arr)=>{if(!arr.length)return'';const byP={};arr.forEach(j=>{(byP[project(j)]=byP[project(j)]||[]).push(j)});return Object.keys(byP).sort().map(pr=>'<div class="proj">'+esc(pr)+' · '+byP[pr].length+'</div>'+byP[pr].map(card).join('')).join('')};
   $('jobs').innerHTML=(run.length?'<div class="proj" style="color:var(--gold)">Running now</div>'+run.map(card).join(''):'')+(done.length?grp(done):'')||'<div class="gate">No jobs yet. Kick one off and it shows here live.</div>';
+  const focused=Array.from(document.querySelectorAll('.job')).find(node=>node.dataset.jobId===FOCUS_JOB);if(focused){focused.classList.add('focused');if(focusPending){focused.scrollIntoView({behavior:'smooth',block:'center'});focusPending=false}}
   // per-day (params logged per day)
   const byDay={};jobs.forEach(j=>{const k=dayKey(j.created_at);byDay[k]=byDay[k]||{jobs:0,ai:0};byDay[k].jobs++;byDay[k].ai+=aiCalls(j,ev)});
   const days=Object.keys(byDay).sort().reverse().slice(0,7);

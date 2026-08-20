@@ -19,10 +19,10 @@ test("catalog includes research, verification, continuity revision, and data rev
 
 test("process skills are complete and automatically mapped to jobs", () => {
   const skills = skillList();
-  assert.equal(skills.length, 8);
-  assert.ok(skills.some((item) => item.id === "cfops-google-research"));
-  assert.ok(skills.some((item) => item.id === "cfops-claude-verifier"));
-  assert.deepEqual(skillsForTemplate("site_health"), ["cfops-live-verify", "cfops-context-handoff"]);
+  const ids = new Set(skills.map((item) => item.id));
+  assert.equal(skills.length, 14);
+  for (const id of ["cfops-google-research", "cfops-claude-verifier", "cfops-live-verify", "cfops-landing-guard", "cfops-error-sentinel", "cfops-operator-context"]) assert.ok(ids.has(id), id);
+  assert.deepEqual(skillsForTemplate("site_health"), ["cfops-live-verify", "cfops-landing-guard", "cfops-error-sentinel", "cfops-context-handoff", "cfops-operator-context"]);
   assert.ok(skillsForTemplate("security_review").includes("cfops-security-review"));
   assert.ok(skillsForTemplate("security_review").includes("cfops-claude-verifier"));
 });

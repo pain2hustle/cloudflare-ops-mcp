@@ -49,9 +49,9 @@ This key is not a Cloudflare API token. The Cloudflare OAuth grant remains serve
 
 Every mutating tool is dry-run by default. Read the returned diff, then pass `apply: true` only after the account owner approves it.
 
-## Version 0.4 private Agent Harness
+## Version 0.5 private Agent Harness
 
-Version 0.4 can delegate bounded work to the companion Agent Harness through five MCP tools:
+Version 0.5 can delegate bounded work to the companion Agent Harness through five MCP tools:
 
 - `agent_research_start` starts a bounded template job, including zero-AI `site_health` checks.
 - `agent_research_status` returns one job's redacted sources, timeline, primary result, and independent verifier result.
@@ -62,7 +62,7 @@ Version 0.4 can delegate bounded work to the companion Agent Harness through fiv
 Start a bounded job:
 
 ```json
-{"name":"agent_research_start","arguments":{"agent_name":"Jack","template_id":"site_health","objective":"Verify the release endpoint","allowed_domains":["example.com"],"urls":["https://example.com/health"],"expected_text":"0.4.2"}}
+{"name":"agent_research_start","arguments":{"agent_name":"Jack","template_id":"site_health","objective":"Verify the release endpoint","allowed_domains":["example.com"],"urls":["https://example.com/health"],"expected_text":"0.5.0"}}
 ```
 
 Read status or recent jobs:
