@@ -2,7 +2,7 @@
 
 Effective: August 17, 2026
 
-These terms cover the open-source Cloudflare Ops MCP project and the hosted connector at `cfops.nothingunseen.com`. The project is made by AMH — Artificial Mind Hive and operated by Service Pricer LLC.
+These terms cover the open-source Cloudflare Ops MCP project and the hosted connector at `mcp.artificialmindhive.com`. The project is made by AMH — Artificial Mind Hive and operated by Service Pricer LLC.
 
 ## Open-source code
 

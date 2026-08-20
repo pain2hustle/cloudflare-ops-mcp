@@ -6,7 +6,7 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "routes": [
-    { "pattern": "harness.nothingunseen.com", "custom_domain": true }
+    { "pattern": "console.artificialmindhive.com", "custom_domain": true }
   ],
   "observability": { "enabled": true },
   "ai": { "binding": "AI" },

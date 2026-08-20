@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { knowledgeFilename, redactedKnowledgeExport } from "../src/knowledge.js";
 
 test("knowledge filenames include safe site, date, and time", () => {
-  assert.equal(knowledgeFilename("https://CFOPS.NothingUnseen.com", "Release Manifest", new Date("2026-08-17T18:42:08Z")), "cfops.nothingunseen.com/2026-08-17_18-42-08Z_release-manifest.json");
+  assert.equal(knowledgeFilename("https://MCP.ArtificialMindHive.com", "Release Manifest", new Date("2026-08-17T18:42:08Z")), "mcp.artificialmindhive.com/2026-08-17_18-42-08Z_release-manifest.json");
 });
 
 test("compact export omits detailed job payloads and unapproved revisions", () => {

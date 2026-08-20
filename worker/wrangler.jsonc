@@ -14,8 +14,8 @@
   // key; a fresh namespace WIPES them.
   //   AMH  (canonical, this file): account 0ebf6d65… pain2hustle1
   //        mcp.artificialmindhive.com   KV 4d55e8a9a8c54d9d8e03253542e0dbdb
-  //   NU   (second deployment):     account 1d5fae60… austinsdoors1
-  //        cfops.nothingunseen.com      KV 1854b6d5bc8c4860bc914412443a0172
+  //   Legacy Austin deployment (un-routed): account 1d5fae60… austinsdoors1
+  //        KV 1854b6d5bc8c4860bc914412443a0172
   //        (that KV is still TITLED ZONEMENDER_OAUTH from before the rename)
   // Deploying this file to austinsdoors1 fails on both the KV id and the custom
   // domain (that zone lives in the other account). Target it explicitly.

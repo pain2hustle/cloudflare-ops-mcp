@@ -7,13 +7,13 @@ The remote server is an unofficial Cloudflare operations MCP for DNS, Email Rout
 ## Public hosted endpoint
 
 ```txt
-https://cfops.nothingunseen.com/mcp
+https://mcp.artificialmindhive.com/mcp
 ```
 
 Connect your Cloudflare account first:
 
 ```txt
-https://cfops.nothingunseen.com/oauth/cloudflare/start
+https://mcp.artificialmindhive.com/oauth/cloudflare/start
 ```
 
 After consent, copy the one-time `cfops_` key and send it as:
@@ -30,7 +30,7 @@ This key is not a Cloudflare API token. The Cloudflare OAuth grant remains serve
 {
   "mcpServers": {
     "cloudflareOps": {
-      "url": "https://cfops.nothingunseen.com/mcp",
+      "url": "https://mcp.artificialmindhive.com/mcp",
       "headers": {
         "Authorization": "Bearer cfops_YOUR_CONNECTOR_KEY"
       }

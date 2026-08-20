@@ -8,10 +8,10 @@ Choose the lane that fits you:
 
 ## Fastest: public hosted OAuth
 
-Open [https://cfops.nothingunseen.com/oauth/cloudflare/start](https://cfops.nothingunseen.com/oauth/cloudflare/start), approve Cloudflare consent, and copy the one-time MCP configuration. Point your client to:
+Open [https://mcp.artificialmindhive.com/oauth/cloudflare/start](https://mcp.artificialmindhive.com/oauth/cloudflare/start), approve Cloudflare consent, and copy the one-time MCP configuration. Point your client to:
 
 ```txt
-https://cfops.nothingunseen.com/mcp
+https://mcp.artificialmindhive.com/mcp
 ```
 
 The returned `cfops_` connector key is not a Cloudflare API token. Keep it private and out of Git. See [OAUTH.md](OAUTH.md) for Claude/Cursor/Codex examples, status, and revoke commands.

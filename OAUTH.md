@@ -9,7 +9,7 @@ Version 0.3.0 is the public, per-user OAuth lane. A user authorizes Cloudflare d
 1. Open:
 
    ```txt
-   https://cfops.nothingunseen.com/oauth/cloudflare/start
+   https://mcp.artificialmindhive.com/oauth/cloudflare/start
    ```
 
 2. Review and approve Cloudflare's consent screen.
@@ -17,7 +17,7 @@ Version 0.3.0 is the public, per-user OAuth lane. A user authorizes Cloudflare d
 4. Use this MCP endpoint:
 
    ```txt
-   https://cfops.nothingunseen.com/mcp
+   https://mcp.artificialmindhive.com/mcp
    ```
 
 5. Send the connector key:
@@ -36,7 +36,7 @@ Claude Desktop or Cursor-style JSON:
 {
   "mcpServers": {
     "cloudflareOps": {
-      "url": "https://cfops.nothingunseen.com/mcp",
+      "url": "https://mcp.artificialmindhive.com/mcp",
       "headers": {
         "Authorization": "Bearer cfops_YOUR_CONNECTOR_KEY"
       }
@@ -48,7 +48,7 @@ Claude Desktop or Cursor-style JSON:
 Codex CLI:
 
 ```sh
-codex mcp add cloudflare-ops --url https://cfops.nothingunseen.com/mcp \
+codex mcp add cloudflare-ops --url https://mcp.artificialmindhive.com/mcp \
   --bearer-token-env-var CFOPS_CONNECTOR_KEY
 ```
 
@@ -81,14 +81,14 @@ Status example:
 
 ```sh
 curl -H "Authorization: Bearer $CFOPS_CONNECTOR_KEY" \
-  https://cfops.nothingunseen.com/oauth/cloudflare/status
+  https://mcp.artificialmindhive.com/oauth/cloudflare/status
 ```
 
 Revoke example:
 
 ```sh
 curl -X POST -H "Authorization: Bearer $CFOPS_CONNECTOR_KEY" \
-  https://cfops.nothingunseen.com/oauth/cloudflare/revoke
+  https://mcp.artificialmindhive.com/oauth/cloudflare/revoke
 ```
 
 ## Self-host from Git

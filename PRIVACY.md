@@ -2,7 +2,7 @@
 
 Effective: August 17, 2026
 
-This notice covers the open-source Cloudflare Ops MCP project and the hosted connector at `cfops.nothingunseen.com`. The project is made by AMH — Artificial Mind Hive and operated by Service Pricer LLC.
+This notice covers the open-source Cloudflare Ops MCP project and the hosted connector at `mcp.artificialmindhive.com`. The project is made by AMH — Artificial Mind Hive and operated by Service Pricer LLC.
 
 ## Plain-language summary
 
@@ -63,7 +63,7 @@ To disconnect the hosted connector:
 
 ```sh
 curl -X POST -H "Authorization: Bearer $CFOPS_CONNECTOR_KEY" \
-  https://cfops.nothingunseen.com/oauth/cloudflare/revoke
+  https://mcp.artificialmindhive.com/oauth/cloudflare/revoke
 ```
 
 You may also revoke the OAuth application from your Cloudflare account.
@@ -75,4 +75,3 @@ The hosted service is intended for operators and developers managing Cloudflare 
 ## Changes and contact
 
 Material changes will be committed to this file with a new effective date. For privacy questions, contact Service Pricer through [servicepricer.app](https://servicepricer.app) or open a GitHub issue without including credentials or private account data.
-

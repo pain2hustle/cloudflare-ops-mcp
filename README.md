@@ -189,7 +189,7 @@ For the fastest path, start with [SETUP.md](SETUP.md). It explains the CLI path,
 
 ## How a user actually uses it
 
-1. Visit [Connect Cloudflare](https://cfops.nothingunseen.com/oauth/cloudflare/start).
+1. Visit [Connect Cloudflare](https://mcp.artificialmindhive.com/oauth/cloudflare/start).
 2. Approve the Cloudflare permissions shown on the consent screen.
 3. Copy the one-time MCP configuration into Claude, Codex, Cursor, or another Streamable HTTP MCP client.
 4. Restart or reconnect the client. It calls MCP `initialize` and `tools/list` automatically—users do not need to memorize tool names.
@@ -276,7 +276,7 @@ cp .env.example .env
 
 For the public hosted service:
 
-1. Open [https://cfops.nothingunseen.com/oauth/cloudflare/start](https://cfops.nothingunseen.com/oauth/cloudflare/start).
+1. Open [https://mcp.artificialmindhive.com/oauth/cloudflare/start](https://mcp.artificialmindhive.com/oauth/cloudflare/start).
 2. Approve only the Cloudflare scopes shown on Cloudflare's consent screen.
 3. Copy the one-time `cfops_` connector key from the success page.
 4. Put that connector key in your MCP client's `Authorization` header.
@@ -289,7 +289,7 @@ Claude Desktop or Cursor-style configuration:
 {
   "mcpServers": {
     "cloudflareOps": {
-      "url": "https://cfops.nothingunseen.com/mcp",
+      "url": "https://mcp.artificialmindhive.com/mcp",
       "headers": {
         "Authorization": "Bearer cfops_YOUR_CONNECTOR_KEY"
       }
@@ -301,7 +301,7 @@ Claude Desktop or Cursor-style configuration:
 Codex CLI:
 
 ```sh
-codex mcp add cloudflare-ops --url https://cfops.nothingunseen.com/mcp \
+codex mcp add cloudflare-ops --url https://mcp.artificialmindhive.com/mcp \
   --bearer-token-env-var CFOPS_CONNECTOR_KEY
 ```
 
@@ -581,7 +581,6 @@ Made by **-/\-\ M H // WT** — AMH, Artificial Mind Hive, operated by Service P
 - Company: Service Pricer LLC — [servicepricer.app](https://servicepricer.app)
 - GitHub: https://github.com/pain2hustle/cloudflare-ops-mcp
 - AMH on GitHub: [@pain2hustle](https://github.com/pain2hustle)
-- Public AMH-built work: [Nothing Unseen](https://nothingunseen.com)
 - Project policies: [Privacy](PRIVACY.md) · [Terms](TERMS.md) · [Security](SECURITY.md) · [MIT License](LICENSE)
 
 ## License

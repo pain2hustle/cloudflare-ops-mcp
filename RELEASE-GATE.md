@@ -6,9 +6,9 @@ A release is accepted only after the real public URL answers correctly.
 tests → Worker bundle → deploy/preview → public HTTPS scan → expected marker → receipt
 ```
 
-`npm run worker:deploy:verified` deploys the core Worker, then checks `https://cfops.nothingunseen.com/?format=json` for HTTP 2xx, no redirect, and version `0.5.0`.
+`npm run worker:deploy:verified` deploys the core Worker, then checks `https://mcp.artificialmindhive.com/?format=json` for HTTP 2xx, no redirect, and version `0.5.0`.
 
-`npm run agent:deploy:verified` deploys the harness, extracts its `workers.dev` URL, then checks `/health` for version `0.1.4`. The dedicated console is live at `https://console.artificialmindhive.com`; the core Worker can reach the harness privately through the `AGENT_HARNESS` service binding.
+`npm run agent:deploy:verified` deploys the harness, then checks `https://console.artificialmindhive.com/health` for version `0.1.4`. The core Worker can reach the harness privately through the `AGENT_HARNESS` service binding.
 
 `npm run verify:live -- --url https://example.com --expect expected-marker` can gate any landing page. It retries boundedly and emits a receipt with timestamps, HTTP status, response size, and SHA-256 body hash. A 404, redirect, TLS/fetch failure, or wrong marker exits non-zero and prints `LAND FAILED`.
 

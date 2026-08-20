@@ -10,8 +10,8 @@ Cloudflare Ops MCP v0.5.0 scans Cloudflare zones and plans or applies approval-g
 
 AMH Agent Console: https://console.artificialmindhive.com/console
 
-Hosted MCP: https://cfops.nothingunseen.com/mcp
-Connect OAuth: https://cfops.nothingunseen.com/oauth/cloudflare/start
+Hosted MCP: https://mcp.artificialmindhive.com/mcp
+Connect OAuth: https://mcp.artificialmindhive.com/oauth/cloudflare/start
 
 ## Important distinction
 
@@ -37,4 +37,3 @@ Walrus Tooth (WT): https://artificialmindhive.com/WalrusTooth
 Company: Service Pricer LLC - https://servicepricer.app
 GitHub: https://github.com/pain2hustle/cloudflare-ops-mcp
 AMH GitHub: https://github.com/pain2hustle
-Public AMH-built work: https://nothingunseen.com

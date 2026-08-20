@@ -11,7 +11,7 @@
   "remotes": [
     {
       "type": "streamable-http",
-      "url": "https://cfops.nothingunseen.com/mcp",
+      "url": "https://mcp.artificialmindhive.com/mcp",
       "headers": [
         {
           "name": "Authorization",
