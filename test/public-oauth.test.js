@@ -46,6 +46,14 @@ async function connect(testEnv, cloudflareToken) {
     assert.match(callback.headers.get("cache-control"), /no-store/);
     const html = await callback.text();
     assert.doesNotMatch(html, new RegExp(cloudflareToken));
+    assert.match(html, /You, your AI, and WT/i);
+    assert.match(html, /Claude Desktop/);
+    assert.match(html, /Codex CLI/);
+    assert.match(html, /Cursor/);
+    assert.match(html, /https:\/\/cfops\.example\/mcp/);
+    assert.match(html, /console\.artificialmindhive\.com\/console/);
+    assert.doesNotMatch(html, /cfops\.nothingunseen\.com/i);
+    assert.doesNotMatch(html, /\.dc\.html/i);
     return html.match(/cfops_[A-Za-z0-9_-]+/)?.[0];
   } finally {
     globalThis.fetch = originalFetch;
