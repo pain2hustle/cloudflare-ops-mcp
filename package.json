@@ -1,7 +1,7 @@
 {
   "name": "cloudflare-ops-mcp",
-  "version": "0.5.0",
-  "description": "AMH WT Cloudflare Ops MCP v0.5.0: one-click per-user OAuth plus a live AMH SafeTry Agent Console with 14 process skills, newest-first tasks, tenant-scoped WT caching, strict evidence tools, deterministic checks, audit, and verified deploy gates.",
+  "version": "0.5.1",
+  "description": "AMH Walrus Tusk Cloudflare Ops MCP v0.5.1: per-user OAuth, a live SafeTry Agent Console, guarded Cloudflare operations, verified deploy gates, and Bing/AI discovery endpoints.",
   "type": "module",
   "main": "src/index.js",
   "exports": {
@@ -24,7 +24,7 @@
     "oauth:create": "node scripts/cloudflare-oauth-create.mjs",
     "oauth:create:deploy": "node scripts/cloudflare-oauth-create.mjs %CLOUDFLARE_ACCOUNT_ID% %CLOUDFLARE_OPS_WORKER_ORIGIN% --deploy",
     "verify:live": "node scripts/verify-live.mjs",
-    "worker:deploy:verified": "node scripts/deploy-verified.mjs --dir worker --url https://mcp.artificialmindhive.com/?format=json --expect 0.5.0",
+    "worker:deploy:verified": "node scripts/deploy-verified.mjs --dir worker --url https://mcp.artificialmindhive.com/?format=json --expect 0.5.1",
     "agent:deploy:verified": "node scripts/deploy-verified.mjs --dir agent --url https://console.artificialmindhive.com/health --expect 0.1.4"
   },
   "engines": {

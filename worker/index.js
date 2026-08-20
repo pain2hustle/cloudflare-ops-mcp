@@ -41,9 +41,10 @@ import {
 
 const SERVER = {
   name: "cloudflare-ops-mcp",
-  title: "AMH WT Cloudflare Ops MCP — SafeTry Agent Harness",
-  version: "0.5.0",
+  title: "AMH Walrus Tusk Cloudflare Ops MCP — SafeTry Agent Harness",
+  version: "0.5.1",
 };
+const INDEXNOW_KEY = "d4f02a51e05cfee056bc027685262a64";
 
 // ── Federation + policy management tools (front-door over a fleet of MCPs) ──
 // These are handled directly in tools/call (they bypass the CF client + the
@@ -618,6 +619,66 @@ const CORS = {
 function renderLogoSvg() {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Cloudflare Ops MCP"><rect width="512" height="512" rx="96" fill="#07140d"/><path d="M138 294c0-90 73-163 163-163 35 0 68 11 94 30l-46 56c-14-9-30-14-48-14-50 0-91 41-91 91s41 91 91 91c18 0 34-5 48-14l46 56c-26 19-59 30-94 30-90 0-163-73-163-163Z" fill="#6ee7a3"/><path d="M107 158h93v72h-93v-72Zm0 124h93v72h-93v-72Z" fill="#f5f1e8"/><circle cx="347" cy="294" r="42" fill="#f5f1e8"/></svg>`;
 }
+function discoveryUrls(origin) {
+  return [
+    origin + "/",
+    origin + "/?format=json",
+    origin + "/llms.txt",
+    origin + "/walrus-tusk.md",
+  ];
+}
+function renderRobots(origin) {
+  return [
+    "User-agent: *",
+    "Allow: /",
+    "Disallow: /mcp",
+    "Disallow: /oauth/cloudflare/callback",
+    "Disallow: /oauth/cloudflare/status",
+    "Disallow: /oauth/cloudflare/revoke",
+    "Sitemap: " + origin + "/sitemap.xml",
+    "",
+  ].join("\n");
+}
+function renderSitemap(origin) {
+  const stamp = new Date().toISOString().slice(0, 10);
+  const nodes = discoveryUrls(origin).map((url) => "<url><loc>" + url.replace(/&/g, "&amp;") + "</loc><lastmod>" + stamp + "</lastmod></url>").join("");
+  return '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + nodes + "</urlset>";
+}
+function renderLlmsText(origin) {
+  return [
+    "# AMH Walrus Tusk Cloudflare Ops MCP",
+    "",
+    "> OAuth-first, approval-gated Cloudflare operations software by Artificial Mind Hive / Service Pricer LLC.",
+    "",
+    "Canonical landing: " + origin + "/",
+    "Machine status: " + origin + "/?format=json",
+    "MCP endpoint: " + origin + "/mcp",
+    "Connect Cloudflare: " + origin + "/oauth/cloudflare/start",
+    "Agent Console: https://console.artificialmindhive.com/console",
+    "Project and examples: https://github.com/pain2hustle/cloudflare-ops-mcp",
+    "Walrus Tusk landing (legacy route name): https://artificialmindhive.com/WalrusTooth",
+    "",
+    "Capabilities: DNS inspection and guarded changes; SPF, DKIM, DMARC, BIMI; Email Routing; Pages cutovers; cache purge; Turnstile; scoped tokens; account diagnostics; MCP federation; SafeTry agent harness.",
+    "Safety: per-user Cloudflare OAuth; connector keys are hashed; Cloudflare access tokens stay server-side; writes are dry-run or approval-gated; no owner API key is distributed.",
+    "",
+  ].join("\n");
+}
+function renderWalrusTuskMarkdown(origin) {
+  return [
+    "# Walrus Tusk (WT)",
+    "",
+    "Walrus Tusk is the Artificial Mind Hive operator-safety and continuity layer for Cloudflare Ops MCP.",
+    "",
+    "- Hosted MCP: " + origin + "/mcp",
+    "- Connect with Cloudflare OAuth: " + origin + "/oauth/cloudflare/start",
+    "- Live Agent Console: https://console.artificialmindhive.com/console",
+    "- Source, setup, examples, privacy, terms, and security: https://github.com/pain2hustle/cloudflare-ops-mcp",
+    "- Public brand landing (legacy route name): https://artificialmindhive.com/WalrusTooth",
+    "",
+    "Users authorize their own Cloudflare account. Walrus Tusk does not give users the owner's Cloudflare API token.",
+    "",
+  ].join("\n");
+}
 function renderStatusHtml(info) {
   const tools = info.tools.map((tool) => `<span class="chip">${tool}</span>`).join("");
   const oauthState = info.oauth.configured ? "OAuth ready" : "OAuth setup needed";
@@ -629,7 +690,13 @@ function renderStatusHtml(info) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${info.server.title}</title>
-<meta name="description" content="Cloudflare Ops MCP with OAuth connect, DNS, Email, Pages, Cache, and Turnstile tools.">
+<meta name="description" content="AMH Walrus Tusk Cloudflare Ops MCP with per-user OAuth, approval-gated DNS, Email, Pages, Cache, Turnstile, and a private Agent Console.">
+<link rel="canonical" href="${info.canonical}">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta property="og:title" content="${info.server.title}">
+<meta property="og:description" content="Per-user Cloudflare OAuth and guarded operational tools without sharing the owner's API token.">
+<meta property="og:url" content="${info.canonical}">
+<meta property="og:type" content="website">
 <meta name="theme-color" content="#6ee7a3">
 <style>
 :root{--green:#6ee7a3;--green-2:#16a34a;--ink:#102118;--muted:#587064;--cream:#f5f1e8;--panel:#fffaf0;--line:#d9eadc;--dark:#07140d}
@@ -673,6 +740,11 @@ async function fetchInner(request, env) {
     if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
 
     const url = new URL(request.url);
+    if (request.method === "GET" && url.pathname === "/robots.txt") return new Response(renderRobots(url.origin), { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=3600" } });
+    if (request.method === "GET" && url.pathname === "/sitemap.xml") return new Response(renderSitemap(url.origin), { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=3600" } });
+    if (request.method === "GET" && url.pathname === "/llms.txt") return new Response(renderLlmsText(url.origin), { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=3600" } });
+    if (request.method === "GET" && url.pathname === "/walrus-tusk.md") return new Response(renderWalrusTuskMarkdown(url.origin), { headers: { "content-type": "text/markdown; charset=utf-8", "cache-control": "public, max-age=3600" } });
+    if (request.method === "GET" && url.pathname === "/" + INDEXNOW_KEY + ".txt") return new Response(INDEXNOW_KEY, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=86400" } });
     if (url.pathname === "/logo.svg") return new Response(renderLogoSvg(), { headers: { "content-type": "image/svg+xml", ...CORS } });
     if (url.pathname === "/oauth/cloudflare/start") return handleOAuthStart(request, env);
     if (url.pathname === "/oauth/cloudflare/callback") return handleOAuthCallback(request, env);
@@ -688,6 +760,8 @@ async function fetchInner(request, env) {
         admin_fallback_configured: !!env.MCP_ACCESS_KEY,
         token_configured: !!env.CLOUDFLARE_API_TOKEN,
         oauth: getOAuthConfigStatus(env, url.origin),
+        canonical: url.origin + "/",
+        discovery: { robots: url.origin + "/robots.txt", sitemap: url.origin + "/sitemap.xml", llms: url.origin + "/llms.txt", walrus_tusk_markdown: url.origin + "/walrus-tusk.md" },
         note: "Connect at /oauth/cloudflare/start, then POST MCP JSON-RPC to /mcp with your one-user connector key. Cloudflare tokens remain server-side.",
       };
       const wantsJson = url.searchParams.get("format") === "json" || /application\/json/i.test(request.headers.get("accept") || "");

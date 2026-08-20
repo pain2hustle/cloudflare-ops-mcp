@@ -6,7 +6,8 @@ test("worker GET advertises broad Cloudflare Ops tool catalog", async () => {
   const res = await worker.fetch(new Request("https://example.test/"), {});
   assert.equal(res.status, 200);
   const body = await res.json();
-  assert.equal(body.server.title, "AMH WT Cloudflare Ops MCP — SafeTry Agent Harness");
+  assert.equal(body.server.title, "AMH Walrus Tusk Cloudflare Ops MCP — SafeTry Agent Harness");
+  assert.equal(body.server.version, "0.5.1");
   for (const tool of [
     "scan_zone",
     "apply_dns_record",
@@ -34,4 +35,21 @@ test("worker browser status page uses green OAuth connect UI", async () => {
   assert.match(html, /no shared API token/i);
   assert.match(html, /AMH|M H/);
   assert.match(html, /Per-user keys/i);
+});
+
+test("worker publishes Walrus Tusk search and AI discovery resources", async () => {
+  const origin = "https://mcp.artificialmindhive.com";
+  const cases = [
+    ["/robots.txt", /Sitemap: https:\/\/mcp\.artificialmindhive\.com\/sitemap\.xml/],
+    ["/sitemap.xml", /walrus-tusk\.md/],
+    ["/llms.txt", /AMH Walrus Tusk Cloudflare Ops MCP/],
+    ["/walrus-tusk.md", /Walrus Tusk \(WT\)/],
+    ["/d4f02a51e05cfee056bc027685262a64.txt", /^d4f02a51e05cfee056bc027685262a64$/],
+  ];
+
+  for (const [path, pattern] of cases) {
+    const res = await worker.fetch(new Request(origin + path), {});
+    assert.equal(res.status, 200, path);
+    assert.match(await res.text(), pattern, path);
+  }
 });

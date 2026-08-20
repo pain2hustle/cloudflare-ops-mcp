@@ -8,7 +8,7 @@
 
 <p align="center"><a href="https://artificialmindhive.com/WalrusTooth"><strong>🦣 artificialmindhive.com/WalrusTooth</strong></a> · <a href="https://artificialmindhive.com/wtfaq">FAQ</a> · <a href="https://artificialmindhive.com/wtdocs">Docs</a></p>
 
-# AMH Cloudflare Ops MCP by WT
+# AMH Cloudflare Ops MCP by Walrus Tusk (WT)
 
 **An approval-gated Cloudflare operations suite with an optional private Agent Harness: bounded delegation, deterministic verification, OAuth-isolated MCP tools, and verified deploy checks without handing agents raw account credentials.**
 
@@ -20,11 +20,11 @@
 - **Cloudflare-native connections:** optional OAuth connectors for the official Cloudflare API, Workers Builds, Bindings, Observability, and Docs MCP services, plus Wrangler-based Worker deployment and secrets.
 - **Guarded operations:** Turnstile, DNS, SPF/DMARC/BIMI, Email Routing, Pages cutovers, cache purge, scoped tokens, and account diagnostics stay dry-run or approval-gated where they write.
 
-> **Latest update - v0.5.0:** the AMH console opens and focuses each new live task, keeps running/newest agents first, selects 14 reusable skill folders, records exact model calls, coalesces tenant-scoped duplicate work through WT caching, and uses strict result tools with fail-closed citations. The free lane is verified live; Kimi K2.6 remains an explicit paid option. See the [latest release](https://github.com/pain2hustle/cloudflare-ops-mcp/releases/latest).
+> **Latest update - v0.5.1:** the hosted AMH Walrus Tusk MCP and Agent Console now use the Artificial Mind Hive domains throughout, keep Cloudflare OAuth server-side, and publish dedicated `robots.txt`, `sitemap.xml`, `llms.txt`, Walrus Tusk Markdown, and IndexNow ownership resources for Bing and AI discovery. The visible landing UI is unchanged. See the [latest release](https://github.com/pain2hustle/cloudflare-ops-mcp/releases/latest).
 
 Cloudflare Ops MCP scans Cloudflare configuration, computes a **diff** of desired vs current **DNS / Email Routing / BIMI / DMARC / SPF / Pages / cache / Turnstile** setup, and **applies fixes only after explicit approval**. It is built for people who want an AI agent to help with Cloudflare safely: scan first, show the plan, then write only when the owner approves.
 
-Version 0.5.0 works five ways:
+Version 0.5.1 works five ways:
 
 - **CLI**: run `cfops` locally with a scoped Cloudflare token.
 - **Library**: import the zero-dependency engine into your own app.
@@ -33,6 +33,8 @@ Version 0.5.0 works five ways:
 - **Private Agent Harness**: deploy the companion `agent/` Worker behind the MCP Worker's `AGENT_HARNESS` service binding for bounded jobs, health watches, schedules, audit, and the authenticated operator console at [console.artificialmindhive.com/console](https://console.artificialmindhive.com/console).
 
 For repository-connected deployments, see [GIT-INTEGRATION.md](GIT-INTEGRATION.md). The recommended route uses Cloudflare Workers Builds' GitHub App authorization; the MCP does not store a GitHub token.
+
+Machine discovery is available at [robots.txt](https://mcp.artificialmindhive.com/robots.txt), [sitemap.xml](https://mcp.artificialmindhive.com/sitemap.xml), [llms.txt](https://mcp.artificialmindhive.com/llms.txt), and [walrus-tusk.md](https://mcp.artificialmindhive.com/walrus-tusk.md). These describe the public landing and documentation; authenticated MCP and OAuth callback routes remain excluded from crawling.
 
 Cloudflare Ops MCP is especially useful for Cloudflare operators who need repeatable DNS hygiene across many zones: SPF cleanup, DMARC enforcement, BIMI records, MX checks, DKIM discovery, Cloudflare Email Routing, TXT verification records, safe DNS upserts, and audit logs for every approved write.
 

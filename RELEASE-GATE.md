@@ -6,7 +6,7 @@ A release is accepted only after the real public URL answers correctly.
 tests → Worker bundle → deploy/preview → public HTTPS scan → expected marker → receipt
 ```
 
-`npm run worker:deploy:verified` deploys the core Worker, then checks `https://mcp.artificialmindhive.com/?format=json` for HTTP 2xx, no redirect, and version `0.5.0`.
+`npm run worker:deploy:verified` deploys the core Worker, then checks `https://mcp.artificialmindhive.com/?format=json` for HTTP 2xx, no redirect, and version `0.5.1`.
 
 `npm run agent:deploy:verified` deploys the harness, then checks `https://console.artificialmindhive.com/health` for version `0.1.4`. The core Worker can reach the harness privately through the `AGENT_HARNESS` service binding.
 
