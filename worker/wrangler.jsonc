@@ -24,7 +24,12 @@
   ],
   "services": [
     { "binding": "AGENT_HARNESS", "service": "amh-wt-agent-harness" }
-  ]
+  ],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  }
   // OAuth secrets for hosted connectors:
   //   npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_ID
   //   npx wrangler secret put CLOUDFLARE_OAUTH_CLIENT_SECRET

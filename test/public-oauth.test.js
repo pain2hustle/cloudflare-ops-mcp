@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import {
   authorizeConnector,
   getOAuthAccessToken,
@@ -8,6 +9,8 @@ import {
   handleOAuthStart,
   handleOAuthStatus,
 } from "../worker/oauth.js";
+
+const connectedPageBundle = await readFile(new URL("../worker/public/WT-Connected.html", import.meta.url), "utf8");
 
 class MemoryKV {
   constructor() { this.values = new Map(); }
@@ -22,6 +25,7 @@ function env() {
     CLOUDFLARE_OAUTH_CLIENT_SECRET: "server-only-secret",
     CLOUDFLARE_OAUTH_REDIRECT_URI: "https://cfops.example/oauth/cloudflare/callback",
     CLOUDFLARE_OPS_OAUTH: new MemoryKV(),
+    ASSETS: { fetch: async () => new Response(connectedPageBundle, { headers: { "content-type": "text/html" } }) },
     MCP_ACCESS_KEY: "private-admin-key",
     CLOUDFLARE_API_TOKEN: "private-admin-cloudflare-token",
   };

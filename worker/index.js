@@ -8,8 +8,8 @@
 //     logs or an agent's transcript. Set it once:  wrangler secret put CLOUDFLARE_API_TOKEN
 //   • Every mutating tool is DRY-RUN by default. It returns the planned diff and
 //     writes NOTHING unless the caller passes { apply: true }. See the diff first.
-//   • BIMI inherits the engine's hard DMARC precondition (won't write over p=none
-//     unless { force: true }). Delete is intentionally NOT exposed here.
+//   • BIMI inherits the engine's hard DMARC precondition. DNS delete requires
+//     exact record id + expected name + confirm=true after a fresh lookup.
 //   • No external dependencies, no Durable Object — a plain Worker that speaks
 //     JSON-RPC 2.0 (MCP). Deploys clean on the Workers free tier.
 //
@@ -17,7 +17,7 @@
 // audit.js which uses node:fs, unavailable in a Worker isolate).
 import { CloudflareClient, redactToken } from "../src/client.js";
 import { scanZone } from "../src/zone.js";
-import { applyDnsRecord } from "../src/dns.js";
+import { applyDnsRecord, deleteDnsRecord } from "../src/dns.js";
 import { setDmarcPolicy } from "../src/dmarc.js";
 import { setupBimi } from "../src/bimi.js";
 import { setupEmailRouting } from "../src/email.js";
@@ -129,6 +129,21 @@ const TOOLS = [
         apply: { type: "boolean", description: "Set true to actually write. Default false = dry-run." },
       },
       required: ["domain", "type", "name", "content"],
+    },
+  },
+  {
+    name: "delete_dns_record",
+    description:
+      "Delete exactly one DNS record after a fresh lookup. Requires domain, exact record_id, matching expected_name, and confirm=true. Refuses by default and never deletes by name alone.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        domain: { type: "string", description: "Zone name, e.g. example.com" },
+        record_id: { type: "string", description: "Exact DNS record id returned by scan_zone" },
+        expected_name: { type: "string", description: "Exact hostname expected for that record id" },
+        confirm: { type: "boolean", description: "Must be true to perform the deletion" },
+      },
+      required: ["domain", "record_id", "expected_name", "confirm"],
     },
   },
   {
@@ -474,6 +489,22 @@ async function runTool(name, args, env, authContext) {
         { apply: args.apply === true }
       );
 
+    case "delete_dns_record": {
+      const recordId = String(args.record_id || "").trim();
+      const expectedName = String(args.expected_name || "").trim().toLowerCase().replace(/\.$/, "");
+      if (!recordId || !expectedName) return { error: true, message: "record_id and expected_name are required" };
+      if (args.confirm !== true) return await deleteDnsRecord(client, domain, recordId, { confirm: false });
+      const snapshot = await scanZone(client, domain);
+      const record = (snapshot.dns || []).find((item) => item.id === recordId);
+      if (!record) return { error: true, message: "DNS record id was not found during the confirmation lookup" };
+      const actualName = String(record.name || "").trim().toLowerCase().replace(/\.$/, "");
+      if (actualName !== expectedName) {
+        return { error: true, message: "DNS record name changed or does not match expected_name", actual_name: record.name };
+      }
+      const deletion = await deleteDnsRecord(client, domain, recordId, { confirm: true, zoneId: snapshot.zone_id });
+      return { ...deletion, deleted_record: { id: record.id, type: record.type, name: record.name, content: record.content } };
+    }
+
     case "set_dmarc_policy":
       return await setDmarcPolicy(
         client,
@@ -589,7 +620,7 @@ async function handleRpc(msg, env, authContext) {
       const out = await runTool(toolName, args, env, authContext);
       const isError = !!(out && out.error);
       // Best-effort audit to observability (redacted; never the token).
-      if (args.apply === true && !isError) {
+      if ((args.apply === true || (toolName === "delete_dns_record" && args.confirm === true)) && !isError) {
         console.log(JSON.stringify({
           event: "tool_apply",
           tool: toolName,

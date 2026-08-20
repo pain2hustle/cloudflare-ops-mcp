@@ -75,6 +75,45 @@ function escapeHtml(value) {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+async function renderConnectedHtmlExact(origin, connectorKey, env) {
+  if (!env.ASSETS) throw new Error("WT Connected UI asset binding is unavailable.");
+  const assetResponse = await env.ASSETS.fetch(new Request(new URL("/WT-Connected.html", origin)));
+  if (!assetResponse.ok) throw new Error("WT Connected UI asset could not be loaded.");
+  let bundle = await assetResponse.text();
+  const templatePattern = /(<script type="__bundler\/template">)([\s\S]*?)(<\/script>)/;
+  if (!templatePattern.test(bundle)) throw new Error("WT Connected UI template payload is missing.");
+
+  bundle = bundle.replace(templatePattern, (_match, open, encoded, close) => {
+    let page = JSON.parse(encoded);
+    page = page
+      .replace(/\s*<a\s+href="https:\/\/cfops\.nothingunseen\.com"[\s\S]*?<\/a>/gi, "")
+      .replace(/\s*<a\s+href="https:\/\/nothingunseen\.com"[\s\S]*?<\/a>/gi, "")
+      .replaceAll('href="WT Landing.dc.html"', 'href="https://artificialmindhive.com/WalrusTooth"')
+      .replaceAll('href="WT Docs.dc.html"', 'href="https://artificialmindhive.com/wtdocs"')
+      .replaceAll('href="WT Agents.dc.html"', 'href="https://console.artificialmindhive.com/console"')
+      .replaceAll('href="WT FAQ.dc.html"', 'href="https://artificialmindhive.com/wtfaq"')
+      .replaceAll('href="AMH Agent Console.dc.html"', 'href="https://console.artificialmindhive.com/console"')
+      .replaceAll('href="WT Console Unlock.dc.html"', 'href="https://console.artificialmindhive.com/console"')
+      .replaceAll('href="/docs"', 'href="https://artificialmindhive.com/wtdocs"')
+      .replaceAll('href="/agents"', 'href="https://console.artificialmindhive.com/console"')
+      .replaceAll('href="/faq"', 'href="https://artificialmindhive.com/wtfaq"')
+      .replaceAll('href="/console"', 'href="https://console.artificialmindhive.com/console"')
+      .replaceAll('href="/"', 'href="https://artificialmindhive.com/WalrusTooth"')
+      .replace(/https:\/\/mcp\.artificialmindhive\.com\/mcp/gi, `${origin}/mcp`)
+      .replace(/https:\/\/cfops\.nothingunseen\.com\/mcp/gi, `${origin}/mcp`)
+      .replace(/https:\/\/cfops\.nothingunseen\.com/gi, origin)
+      .replace(/cfops_[A-Za-z0-9_-]+/g, connectorKey);
+    return open + JSON.stringify(page).replace(/</g, "\\u003c") + close;
+  });
+
+  return bundle
+    .replace(/https:\/\/mcp\.artificialmindhive\.com\/mcp/gi, `${origin}/mcp`)
+    .replace(/https:\/\/cfops\.nothingunseen\.com\/mcp/gi, `${origin}/mcp`)
+    .replace(/https:\/\/cfops\.nothingunseen\.com/gi, origin)
+    .replace(/https:\/\/nothingunseen\.com/gi, "https://artificialmindhive.com")
+    .replace(/cfops_[A-Za-z0-9_-]+/g, connectorKey);
+}
+
 function renderConnectedHtml(origin, connectorKey) {
   const claudeConfig = JSON.stringify({
     mcpServers: { cloudflareOps: { url: `${origin}/mcp`, headers: { Authorization: `Bearer ${connectorKey}` } } },
@@ -188,14 +227,14 @@ export async function handleOAuthCallback(request, env) {
     provider: "cloudflare",
     created_at: now,
   }));
-  return new Response(renderConnectedHtml(url.origin, connectorKey), {
+  return new Response(await renderConnectedHtmlExact(url.origin, connectorKey, env), {
     status: 200,
     headers: {
       "content-type": "text/html; charset=utf-8",
       "cache-control": "no-store, private",
       "referrer-policy": "no-referrer",
       "x-content-type-options": "nosniff",
-      "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      "content-security-policy": "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com blob:; script-src 'unsafe-inline' blob:; img-src data: blob:; font-src data: blob: https://fonts.gstatic.com; frame-src blob:; worker-src blob:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
       "permissions-policy": "camera=(), microphone=(), geolocation=()",
     },
   });

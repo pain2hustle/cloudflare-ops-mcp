@@ -11,6 +11,7 @@ test("worker GET advertises broad Cloudflare Ops tool catalog", async () => {
   for (const tool of [
     "scan_zone",
     "apply_dns_record",
+    "delete_dns_record",
     "setup_email_routing",
     "pages_cutover",
     "purge_cache",
