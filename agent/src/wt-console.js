@@ -1,9 +1,9 @@
-// Walrus Tooth operator console — served same-origin on the harness so it reads the
+// Walrus Tusk operator console — served same-origin on the harness so it reads the
 // live /api/dashboard feed with the session cookie. Design = Austin's AMH Agent Console
 // (Archivo Black + JetBrains Mono, dark-green), data + progress logic ported from the
 // local dash. Progress bars move off real event stages; params shown per agent + per day.
 export const WT_CONSOLE_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Walrus Tooth · Operator Console</title>
+<title>Walrus Tusk · Operator Console</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -78,7 +78,7 @@ ul.cap{margin:0;padding:20px 24px 20px 42px}ul.cap li{margin:7px 0}ul.cap.no li{
       <svg class="amh" viewBox="0 0 56 64" aria-label="Artificial Mind Hive"><defs><linearGradient id="ah" x1="0" y1="0" x2="56" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#ffd24d"/><stop offset="55%" stop-color="#f5b800"/><stop offset="100%" stop-color="#a87a0c"/></linearGradient></defs><polygon points="28,2 54,17 54,47 28,62 2,47 2,17" fill="url(#ah)" stroke="#7c5908" stroke-width="1.25"/><path d="M18 46 L28 18 L38 46 M22 38 L34 38" stroke="#0e1411" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="28" cy="11" r="2.6" fill="#0e1411"/></svg>
       <div><div class="htitle">MCP Agent Console</div><div class="hby">Artificial Mind Hive · by Service Pricer LLC™</div></div>
     </div>
-    <div class="wt"><div class="wtl"><b>WT</b><span>Walrus Tooth</span></div><img class="wtimg" src="https://wt-console.pages.dev/walrus.png" alt="Walrus Tooth"></div>
+    <div class="wt"><div class="wtl"><b>WT</b><span>Walrus Tusk</span></div><img class="wtimg" src="https://wt-console.pages.dev/walrus.png" alt="Walrus Tusk"></div>
   </div>
   <div class="status"><span><span class="dot"></span> live</span><span>/</span><span>auto-refresh 3s</span><span>/</span><span id="lane">model lane: —</span></div>
   <div id="tiles" class="tiles"></div>
@@ -103,7 +103,6 @@ ul.cap{margin:0;padding:20px 24px 20px 42px}ul.cap li{margin:7px 0}ul.cap.no li{
       <a href="https://artificialmindhive.com/privacy.html" target="_blank" rel="noopener">Privacy</a>
       <a href="https://artificialmindhive.com/terms.html" target="_blank" rel="noopener">Terms</a>
       <a href="https://artificialmindhive.com/security.html" target="_blank" rel="noopener">Security</a>
-      <a href="https://nothingunseen.com" target="_blank" rel="noopener">Nothing Unseen</a>
     </div>
     <div><a href="https://artificialmindhive.com" target="_blank" rel="noopener">AMH — Artificial Mind Hive · Service Pricer LLC™</a></div>
     <div class="mark">-/\\-\\ M H // WT</div>

@@ -4,7 +4,7 @@
 
 <p align="center"><code>-/\-\ M H // WT</code></p>
 
-<p align="center"><sub><strong>WT WALRUS TOOTH</strong></sub></p>
+<p align="center"><sub><strong>WT WALRUS TUSK</strong></sub></p>
 
 <p align="center"><a href="https://artificialmindhive.com/WalrusTooth"><strong>🦣 artificialmindhive.com/WalrusTooth</strong></a> · <a href="https://artificialmindhive.com/wtfaq">FAQ</a> · <a href="https://artificialmindhive.com/wtdocs">Docs</a></p>
 
@@ -577,7 +577,7 @@ Made by **-/\-\ M H // WT** — AMH, Artificial Mind Hive, operated by Service P
 ## Contact / company
 
 - Artificial Mind Hive: [artificialmindhive.com](https://artificialmindhive.com)
-- Walrus Tooth (WT): [artificialmindhive.com/WalrusTooth](https://artificialmindhive.com/WalrusTooth) · [FAQ](https://artificialmindhive.com/wtfaq) · [Docs](https://artificialmindhive.com/wtdocs)
+- Walrus Tusk (WT): [artificialmindhive.com/WalrusTooth](https://artificialmindhive.com/WalrusTooth) · [FAQ](https://artificialmindhive.com/wtfaq) · [Docs](https://artificialmindhive.com/wtdocs)
 - Company: Service Pricer LLC — [servicepricer.app](https://servicepricer.app)
 - GitHub: https://github.com/pain2hustle/cloudflare-ops-mcp
 - AMH on GitHub: [@pain2hustle](https://github.com/pain2hustle)
