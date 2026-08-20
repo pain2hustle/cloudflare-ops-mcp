@@ -50,6 +50,7 @@ async function connect(testEnv, cloudflareToken) {
     assert.match(callback.headers.get("cache-control"), /no-store/);
     assert.match(callback.headers.get("content-security-policy"), /script-src[^;]*'unsafe-eval'/);
     const html = await callback.text();
+    assert.match(html, /Connected — Walrus Tusk \/\/ AMH/);
     assert.doesNotMatch(html, new RegExp(cloudflareToken));
     assert.match(html, /You, your AI, and WT/i);
     assert.match(html, /Claude Desktop/);

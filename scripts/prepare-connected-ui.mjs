@@ -14,6 +14,7 @@ if (!templatePattern.test(bundle)) {
 bundle = bundle.replace(templatePattern, (_match, open, encoded, close) => {
   let page = JSON.parse(encoded);
   page = page
+    .replace("<html><head>", '<html lang="en"><head>\n<title>Connected — Walrus Tusk // AMH</title>')
     .replace(/\s*<a\s+href="https:\/\/cfops\.nothingunseen\.com"[\s\S]*?<\/a>/gi, "")
     .replace(/\s*<a\s+href="https:\/\/nothingunseen\.com"[\s\S]*?<\/a>/gi, "")
     .replaceAll('href="WT Landing.dc.html"', 'href="https://artificialmindhive.com/WalrusTooth"')
