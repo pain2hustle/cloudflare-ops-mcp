@@ -1,7 +1,7 @@
 {
   "name": "cloudflare-ops-mcp",
-  "version": "0.5.2",
-  "description": "AMH Walrus Tusk Cloudflare Ops MCP v0.5.2: per-user OAuth, the WT Connected setup UI, guarded Cloudflare operations, a private Agent Console, and verified release gates.",
+  "version": "0.5.3",
+  "description": "AMH Walrus Tusk Cloudflare Ops MCP v0.5.3: per-user OAuth, the exact WT Connected setup UI, guarded Cloudflare operations, a private Agent Console, and automated Chromium release gates.",
   "type": "module",
   "main": "src/index.js",
   "exports": {
@@ -12,6 +12,7 @@
   },
   "scripts": {
     "test": "node --test",
+    "test:connected-ui": "node scripts/verify-connected-ui.mjs",
     "worker:dev": "cd worker && npx wrangler dev",
     "worker:deploy": "cd worker && npx wrangler deploy",
     "worker:tail": "cd worker && npx wrangler tail",
@@ -24,8 +25,11 @@
     "oauth:create": "node scripts/cloudflare-oauth-create.mjs",
     "oauth:create:deploy": "node scripts/cloudflare-oauth-create.mjs %CLOUDFLARE_ACCOUNT_ID% %CLOUDFLARE_OPS_WORKER_ORIGIN% --deploy",
     "verify:live": "node scripts/verify-live.mjs",
-    "worker:deploy:verified": "node scripts/deploy-verified.mjs --dir worker --url https://mcp.artificialmindhive.com/?format=json --expect 0.5.2",
+    "worker:deploy:verified": "node scripts/deploy-verified.mjs --dir worker --url https://mcp.artificialmindhive.com/?format=json --expect 0.5.3",
     "agent:deploy:verified": "node scripts/deploy-verified.mjs --dir agent --url https://console.artificialmindhive.com/health --expect 0.1.4"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
   },
   "engines": {
     "node": ">=18"

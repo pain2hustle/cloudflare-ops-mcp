@@ -20,11 +20,11 @@
 - **Cloudflare-native connections:** optional OAuth connectors for the official Cloudflare API, Workers Builds, Bindings, Observability, and Docs MCP services, plus Wrangler-based Worker deployment and secrets.
 - **Guarded operations:** Turnstile, DNS, SPF/DMARC/BIMI, Email Routing, Pages cutovers, cache purge, scoped tokens, and account diagnostics stay dry-run or approval-gated where they write.
 
-> **Latest update - v0.5.2:** the hosted AMH Walrus Tusk MCP now ships the owner-supplied WT Connected OAuth setup UI, a guarded exact-record DNS delete tool, sanitized connector assets, and the existing private Agent Console and discovery endpoints. See the [latest release](https://github.com/pain2hustle/cloudflare-ops-mcp/releases/latest).
+> **Latest update - v0.5.3:** the owner-supplied WT Connected OAuth setup UI is now the only success-page renderer. Every release runs it in Chromium under the production security policy and verifies the WT/AMH identity, all four copy controls, phone layout, images, and legacy-link removal. See the [latest release](https://github.com/pain2hustle/cloudflare-ops-mcp/releases/latest).
 
 Cloudflare Ops MCP scans Cloudflare configuration, computes a **diff** of desired vs current **DNS / Email Routing / BIMI / DMARC / SPF / Pages / cache / Turnstile** setup, and **applies fixes only after explicit approval**. It is built for people who want an AI agent to help with Cloudflare safely: scan first, show the plan, then write only when the owner approves.
 
-Version 0.5.2 works five ways:
+Version 0.5.3 works five ways:
 
 - **CLI**: run `cfops` locally with a scoped Cloudflare token.
 - **Library**: import the zero-dependency engine into your own app.

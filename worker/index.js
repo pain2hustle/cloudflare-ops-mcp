@@ -42,7 +42,7 @@ import {
 const SERVER = {
   name: "cloudflare-ops-mcp",
   title: "AMH Walrus Tusk Cloudflare Ops MCP — SafeTry Agent Harness",
-  version: "0.5.2",
+  version: "0.5.3",
 };
 const INDEXNOW_KEY = "d4f02a51e05cfee056bc027685262a64";
 

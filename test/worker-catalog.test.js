@@ -7,7 +7,7 @@ test("worker GET advertises broad Cloudflare Ops tool catalog", async () => {
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(body.server.title, "AMH Walrus Tusk Cloudflare Ops MCP — SafeTry Agent Harness");
-  assert.equal(body.server.version, "0.5.2");
+  assert.equal(body.server.version, "0.5.3");
   for (const tool of [
     "scan_zone",
     "apply_dns_record",
