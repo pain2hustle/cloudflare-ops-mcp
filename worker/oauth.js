@@ -2,6 +2,7 @@
 // in KV; each user's opaque key maps to exactly one OAuth connection.
 const AUTH_URL = "https://dash.cloudflare.com/oauth2/auth";
 const TOKEN_URL = "https://dash.cloudflare.com/oauth2/token";
+const REVOKE_URL = "https://dash.cloudflare.com/oauth2/revoke";
 // offline_access requests a refresh token so the 1-hour access token can be
 // auto-renewed (refreshConnection) instead of the connection dying hourly and
 // forcing a manual reconnect. Without it Cloudflare returns no refresh_token.
@@ -129,6 +130,48 @@ export async function authorizeConnector(env, provided) {
   const connection = await env.CLOUDFLARE_OPS_OAUTH.get(`connection:${session.connection_id}`);
   if (!connection) return { ok: false, reason: "connection_revoked" };
   return { ok: true, mode: "oauth", connectionId: session.connection_id, keyHash };
+}
+
+
+// ── RATE LIMITING (2026-08-21) ───────────────────────────────────────────────
+// There was none. 30 authenticated calls landed in 153ms with nothing in the
+// way, so a leaked cfops_ key could drain the owner's Cloudflare API quota (and
+// bill) before anyone noticed. This is a per-key fixed-window counter in the
+// same KV the connector already reads.
+//
+// KV is eventually consistent, so the count is APPROXIMATE — that is fine here.
+// The goal is to stop a runaway loop or a stolen key from hammering Cloudflare,
+// not to enforce an exact quota. It deliberately FAILS OPEN: if KV is unhealthy
+// the connector keeps working, because this protects a budget, not a secret.
+const RL_WINDOW_SECONDS = 60;
+const RL_DEFAULT_MAX = 120;   // per connector key per minute
+const RL_ADMIN_MAX = 600;     // the owner's own key gets more headroom
+
+export async function checkRateLimit(env, authContext) {
+  if (!env.CLOUDFLARE_OPS_OAUTH) return { allowed: true };
+  const max = Number(
+    authContext.mode === "admin"
+      ? (env.RATE_LIMIT_ADMIN_PER_MIN || RL_ADMIN_MAX)
+      : (env.RATE_LIMIT_PER_MIN || RL_DEFAULT_MAX),
+  );
+  if (!Number.isFinite(max) || max <= 0) return { allowed: true };
+
+  // Bucket per key per minute. Admin has no keyHash, so bucket it separately.
+  const who = authContext.keyHash || (authContext.mode === "admin" ? "admin" : "anon");
+  const bucket = Math.floor(Date.now() / (RL_WINDOW_SECONDS * 1000));
+  const key = `rl:${who}:${bucket}`;
+  try {
+    const cur = Number((await env.CLOUDFLARE_OPS_OAUTH.get(key)) || 0);
+    if (cur >= max) {
+      const resetIn = RL_WINDOW_SECONDS - Math.floor((Date.now() % (RL_WINDOW_SECONDS * 1000)) / 1000);
+      return { allowed: false, limit: max, retryAfter: resetIn };
+    }
+    // TTL is 2 windows so the key self-cleans and we never accumulate garbage.
+    await env.CLOUDFLARE_OPS_OAUTH.put(key, String(cur + 1), { expirationTtl: RL_WINDOW_SECONDS * 2 });
+  } catch {
+    return { allowed: true }; // fail open — availability over precision
+  }
+  return { allowed: true };
 }
 
 export async function handleOAuthStart(request, env) {
@@ -298,11 +341,55 @@ export async function handleOAuthRevoke(request, env) {
   if (!authContext.ok || authContext.mode !== "oauth") {
     return json({ ok: false, error: "unauthorized" }, 401, { "www-authenticate": "Bearer" });
   }
+  // 2026-08-21: actually revoke AT CLOUDFLARE, not just locally.
+  // This used to delete the two KV records and report disconnected:true. The
+  // refresh_token — long-lived, because we request offline_access — stayed
+  // valid on Cloudflare's side forever. If it had ever leaked (a KV read, a
+  // log, a backup) "disconnect" gave the user no protection at all, despite the
+  // connect page promising "you can disconnect it later".
+  let raw = null;
+  try { raw = await env.CLOUDFLARE_OPS_OAUTH.get(`connection:${authContext.connectionId}`); } catch {}
+  let upstream = "skipped";
+  if (raw) {
+    try {
+      const rec = JSON.parse(raw);
+      // Revoke the refresh token — per RFC 7009 that invalidates the whole
+      // grant, access token included. Revoke the access token too, best effort.
+      const targets = [rec.refresh_token, rec.access_token].filter(Boolean);
+      const results = await Promise.all(targets.map((token) =>
+        fetch(REVOKE_URL, {
+          method: "POST",
+          headers: { "content-type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            token,
+            client_id: env.CLOUDFLARE_OAUTH_CLIENT_ID || "",
+            client_secret: env.CLOUDFLARE_OAUTH_CLIENT_SECRET || "",
+          }),
+        }).then((r) => r.ok).catch(() => false)
+      ));
+      upstream = results.length && results.every(Boolean) ? "revoked"
+        : results.some(Boolean) ? "partial" : "failed";
+    } catch { upstream = "failed"; }
+  }
+
+  // Always clear local state, even if the upstream revoke failed — the user
+  // asked to disconnect and must not stay connected here regardless.
   await Promise.all([
     env.CLOUDFLARE_OPS_OAUTH.delete(`session:${authContext.keyHash}`),
     env.CLOUDFLARE_OPS_OAUTH.delete(`connection:${authContext.connectionId}`),
   ]);
-  return json({ ok: true, disconnected: true });
+
+  return json({
+    ok: true,
+    disconnected: true,
+    // Told honestly: if this is not "revoked", the grant may still exist at
+    // Cloudflare and the user should also remove it in
+    // Profile > Access Management > Connected Applications.
+    cloudflare_grant: upstream,
+    ...(upstream === "revoked" ? {} : {
+      note: "The Cloudflare-side grant could not be confirmed revoked. Remove it at https://dash.cloudflare.com/profile/access-management/authorization to be certain.",
+    }),
+  });
 }
 
 export function getOAuthConfigStatus(env, origin = "") {

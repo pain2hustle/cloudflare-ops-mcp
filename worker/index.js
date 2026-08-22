@@ -31,6 +31,7 @@ import { addUpstream, removeUpstream, listUpstreams, federatedTools, isFederated
 import { setPolicy, listPolicy, checkPolicy } from "../src/policy.js";
 import {
   authorizeConnector,
+  checkRateLimit,
   getOAuthAccessToken,
   getOAuthConfigStatus,
   handleOAuthCallback,
@@ -663,11 +664,32 @@ async function handleRpc(msg, env, authContext) {
   return rpcError(id, -32601, `method not found: ${method}`);
 }
 
+// Baseline hardening applied to every response (2026-08-21).
+// ACAO stays "*" ON PURPOSE: this is a bearer-token API, not a cookie session,
+// so there is no ambient authority for a hostile origin to ride — and MCP
+// clients connect from many origins (claude.ai, Cursor, localhost, CLIs).
+// Access-Control-Allow-Credentials is deliberately NEVER set, which is what
+// makes the wildcard safe: browsers refuse to send credentials to a wildcard
+// origin, so a page cannot silently replay a user's key.
+const SECURITY_HEADERS = {
+  // Force HTTPS for a year. The Worker is only ever reachable over TLS.
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+  // Nothing here is meant to be framed — kills clickjacking of the OAuth
+  // connect page, which is the one page a user clicks a real button on.
+  "X-Frame-Options": "DENY",
+  "Content-Security-Policy": "default-src 'self'; frame-ancestors 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; base-uri 'none'; form-action 'self'",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "no-referrer",
+  "Cross-Origin-Opener-Policy": "same-origin",
+  "Permissions-Policy": "geolocation=(), microphone=(), camera=(), payment=()",
+};
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization, X-MCP-Key, Mcp-Session-Id, Mcp-Protocol-Version",
   "Cache-Control": "no-store",
+  ...SECURITY_HEADERS,
 };
 
 function renderLogoSvg() {
@@ -841,6 +863,16 @@ async function fetchInner(request, env) {
       });
     }
 
+    // Rate limit AFTER auth so an unauthenticated flood can't burn KV writes,
+    // and BEFORE parsing the body so a throttled caller costs us almost nothing.
+    const rl = await checkRateLimit(env, authContext);
+    if (!rl.allowed) {
+      return new Response(JSON.stringify(rpcError(null, -32000, `rate limited: over ${rl.limit} requests/minute for this key. Retry in ${rl.retryAfter}s.`)), {
+        status: 429,
+        headers: { "content-type": "application/json", "retry-after": String(rl.retryAfter), ...CORS },
+      });
+    }
+
     let body;
     try { body = await request.json(); } catch {
       return new Response(JSON.stringify(rpcError(null, -32700, "parse error")), { status: 400, headers: { "content-type": "application/json", ...CORS } });
@@ -867,10 +899,22 @@ async function fetchInner(request, env) {
     return new Response(JSON.stringify(payload), { status: 200, headers: { "content-type": "application/json", ...CORS } });
 }
 
+// Stamp the security headers onto EVERY response on the way out. Several
+// routes (robots.txt, sitemap.xml, llms.txt, walrus-tusk.md, the HTML pages)
+// build their own header objects and would otherwise miss them; doing it here
+// means a future route cannot forget. Never overwrites a header a handler set.
+function harden(res) {
+  const h = new Headers(res.headers);
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+    if (!h.has(k)) h.set(k, v);
+  }
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+}
+
 export default {
   async fetch(request, env) {
     try {
-      return await fetchInner(request, env);
+      return harden(await fetchInner(request, env));
     } catch (e) {
       const safe = redactToken(String((e && e.stack) || (e && e.message) || e));
       return new Response(JSON.stringify({ ok: false, error: "worker_exception", detail: safe.split("\n").slice(0, 3).join(" | ") }, null, 2), { status: 500, headers: { "content-type": "application/json", ...CORS } });
