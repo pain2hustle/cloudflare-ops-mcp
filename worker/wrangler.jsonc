@@ -24,6 +24,14 @@
   ],
   // Native Workers Rate Limiting (GA 2025-09). Backed by the same engine as WAF
   // rate limiting rules. namespace_id is any integer unique to this account.
+  // Durable Object limiter — the one that actually enforces on this account.
+  // SQLite-backed DOs are available on the Workers free plan.
+  "durable_objects": {
+    "bindings": [{ "name": "RATE_LIMITER_DO", "class_name": "RateLimiterDO" }]
+  },
+  "migrations": [
+    { "tag": "v1-ratelimiter", "new_sqlite_classes": ["RateLimiterDO"] }
+  ],
   "ratelimits": [
     { "name": "RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 120, "period": 60 } },
     { "name": "RATE_LIMITER_ADMIN", "namespace_id": "1002", "simple": { "limit": 600, "period": 60 } }

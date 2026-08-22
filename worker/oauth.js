@@ -175,10 +175,36 @@ export async function checkRateLimit(env, authContext) {
     : limiter;
   try {
     const { success } = await chosen.limit({ key: who });
-    if (success) return { allowed: true };
-    return { allowed: false, limit: isAdmin ? "admin" : "per-key", retryAfter: 60 };
+    if (!success) {
+      return { allowed: false, limit: isAdmin ? "admin" : "per-key", retryAfter: 60, by: "binding" };
+    }
   } catch {
-    return { allowed: true }; // availability over precision
+    // fall through to the DO — availability over precision
+  }
+
+  // The native binding said yes (or was unavailable). On this account it always
+  // says yes, so the Durable Object below is what actually enforces. It is
+  // strongly consistent: every request for one key routes to ONE object.
+  return checkRateLimitDO(env, who, isAdmin);
+}
+
+async function checkRateLimitDO(env, who, isAdmin) {
+  const ns = env.RATE_LIMITER_DO;
+  if (!ns || typeof ns.idFromName !== "function") return { allowed: true };
+  const limit = Number(
+    isAdmin ? (env.RATE_LIMIT_ADMIN_PER_MIN || 600) : (env.RATE_LIMIT_PER_MIN || 120),
+  );
+  if (!Number.isFinite(limit) || limit <= 0) return { allowed: true };
+  try {
+    const stub = ns.get(ns.idFromName(who));
+    const res = await stub.fetch(`https://rl.local/?limit=${limit}&period=60`);
+    const out = await res.json();
+    if (out && out.allowed === false) {
+      return { allowed: false, limit, retryAfter: out.retryAfter || 60, by: "durable-object" };
+    }
+    return { allowed: true };
+  } catch {
+    return { allowed: true }; // fail open — this protects a budget, not a secret
   }
 }
 

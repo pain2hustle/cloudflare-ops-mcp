@@ -911,6 +911,66 @@ function harden(res) {
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
 }
 
+
+// ── RATE LIMITER DURABLE OBJECT (2026-08-22) ─────────────────────────────────
+// Why a DO and not the two simpler things I tried first:
+//   1. KV counter — KV is EVENTUALLY CONSISTENT. 100 concurrent requests each
+//      read a stale 0, wrote 1, counter never climbed. 800/800 allowed. Useless.
+//   2. Native `ratelimit` binding — attaches fine, limit() is called, but this
+//      account returns { success: true } every time (verified 900 req vs limit
+//      600, and 18 req vs limit 10, on two hostnames, fresh namespace). It stays
+//      wired as the preferred path for when the account supports it.
+// A Durable Object is the only option here that is actually strongly consistent:
+// every request for one key routes to ONE object, so the counter is exact.
+//
+// Cost shape: one DO instance per connector key, holding a few numbers. State
+// lives in memory with a storage-backed fallback so a hibernated object does not
+// forget mid-window. An alarm evicts idle state so nothing accumulates.
+export class RateLimiterDO {
+  constructor(state) {
+    this.state = state;
+    this.hits = null;      // { window: number, count: number }
+  }
+
+  async fetch(request) {
+    const url = new URL(request.url);
+    const limit = Number(url.searchParams.get("limit")) || 120;
+    const period = Number(url.searchParams.get("period")) || 60;
+    const now = Date.now();
+    const window = Math.floor(now / (period * 1000));
+
+    if (!this.hits) {
+      // Cold start / post-hibernation: recover the window we were in.
+      this.hits = (await this.state.storage.get("hits")) || { window, count: 0 };
+    }
+    if (this.hits.window !== window) {
+      this.hits = { window, count: 0 };
+    }
+
+    this.hits.count += 1;
+    const over = this.hits.count > limit;
+
+    // Persist so a hibernation mid-window cannot reset the count to zero, and
+    // set an alarm to drop the row once the window is well past.
+    await this.state.storage.put("hits", this.hits);
+    await this.state.storage.setAlarm(now + period * 2000);
+
+    const resetIn = period - Math.floor((now % (period * 1000)) / 1000);
+    return new Response(JSON.stringify({
+      allowed: !over,
+      count: this.hits.count,
+      limit,
+      retryAfter: resetIn,
+    }), { headers: { "content-type": "application/json" } });
+  }
+
+  async alarm() {
+    // Idle long enough that the window is irrelevant — forget it.
+    await this.state.storage.deleteAll();
+    this.hits = null;
+  }
+}
+
 export default {
   async fetch(request, env) {
     try {
