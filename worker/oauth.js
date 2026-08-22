@@ -135,43 +135,51 @@ export async function authorizeConnector(env, provided) {
 
 // ── RATE LIMITING (2026-08-21) ───────────────────────────────────────────────
 // There was none. 30 authenticated calls landed in 153ms with nothing in the
-// way, so a leaked cfops_ key could drain the owner's Cloudflare API quota (and
-// bill) before anyone noticed. This is a per-key fixed-window counter in the
-// same KV the connector already reads.
+// way, so a leaked cfops_ key could drain the owner's Cloudflare quota (and
+// bill) before anyone noticed.
 //
-// KV is eventually consistent, so the count is APPROXIMATE — that is fine here.
-// The goal is to stop a runaway loop or a stolen key from hammering Cloudflare,
-// not to enforce an exact quota. It deliberately FAILS OPEN: if KV is unhealthy
-// the connector keeps working, because this protects a budget, not a secret.
-const RL_WINDOW_SECONDS = 60;
-const RL_DEFAULT_MAX = 120;   // per connector key per minute
-const RL_ADMIN_MAX = 600;     // the owner's own key gets more headroom
-
+// FIRST ATTEMPT WAS WRONG AND IS WORTH RECORDING: a KV counter (get, increment,
+// put). KV is EVENTUALLY CONSISTENT, so 100 concurrent requests each read a
+// stale 0, wrote 1, and the counter never climbed — measured 800/800 allowed.
+// KV cannot rate limit. This now uses the native Workers Rate Limiting binding
+// (GA Sept 2025), which is backed by the same infrastructure as WAF rate
+// limiting rules and is actually consistent.
+//
+// Configure in wrangler.jsonc:
+//   "ratelimits": [{ "name": "RATE_LIMITER", "namespace_id": "1001",
+//                    "simple": { "limit": 120, "period": 60 } }]
+// If the binding is absent the connector keeps working unlimited — this
+// protects a budget, not a secret, so it fails OPEN by design.
+//
+// ⚠️ MEASURED 2026-08-22, NOT YET ENFORCING ON THIS ACCOUNT.
+// The binding attaches and limit() is called on every request, but Cloudflare
+// returns { success: true } every time — verified by logging the raw result.
+// Tested: 900 requests against a 600 limit, then 20 and 18 against a limit of
+// 10, on both the custom domain and workers.dev, with a fresh namespace_id.
+// Always allowed, no exception thrown. So this is account/plan level, not a
+// wiring bug. The code is correct and starts enforcing the moment the account
+// supports it. If enforcement is needed NOW, the alternative is a Durable
+// Object counter (strongly consistent, works on the free plan) — that is a
+// bigger change and a deliberate one. Do NOT assume this is protecting you.
 export async function checkRateLimit(env, authContext) {
-  if (!env.CLOUDFLARE_OPS_OAUTH) return { allowed: true };
-  const max = Number(
-    authContext.mode === "admin"
-      ? (env.RATE_LIMIT_ADMIN_PER_MIN || RL_ADMIN_MAX)
-      : (env.RATE_LIMIT_PER_MIN || RL_DEFAULT_MAX),
-  );
-  if (!Number.isFinite(max) || max <= 0) return { allowed: true };
+  const limiter = env.RATE_LIMITER;
+  if (!limiter || typeof limiter.limit !== "function") return { allowed: true };
 
-  // Bucket per key per minute. Admin has no keyHash, so bucket it separately.
-  const who = authContext.keyHash || (authContext.mode === "admin" ? "admin" : "anon");
-  const bucket = Math.floor(Date.now() / (RL_WINDOW_SECONDS * 1000));
-  const key = `rl:${who}:${bucket}`;
+  // Bucket per connector key. The admin key has no keyHash, and is the owner's
+  // own key, so it gets its own bucket via the separate ADMIN limiter when one
+  // is configured (falling back to the shared one).
+  const isAdmin = authContext.mode === "admin";
+  const who = authContext.keyHash || (isAdmin ? "admin" : "anon");
+  const chosen = (isAdmin && env.RATE_LIMITER_ADMIN && typeof env.RATE_LIMITER_ADMIN.limit === "function")
+    ? env.RATE_LIMITER_ADMIN
+    : limiter;
   try {
-    const cur = Number((await env.CLOUDFLARE_OPS_OAUTH.get(key)) || 0);
-    if (cur >= max) {
-      const resetIn = RL_WINDOW_SECONDS - Math.floor((Date.now() % (RL_WINDOW_SECONDS * 1000)) / 1000);
-      return { allowed: false, limit: max, retryAfter: resetIn };
-    }
-    // TTL is 2 windows so the key self-cleans and we never accumulate garbage.
-    await env.CLOUDFLARE_OPS_OAUTH.put(key, String(cur + 1), { expirationTtl: RL_WINDOW_SECONDS * 2 });
+    const { success } = await chosen.limit({ key: who });
+    if (success) return { allowed: true };
+    return { allowed: false, limit: isAdmin ? "admin" : "per-key", retryAfter: 60 };
   } catch {
-    return { allowed: true }; // fail open — availability over precision
+    return { allowed: true }; // availability over precision
   }
-  return { allowed: true };
 }
 
 export async function handleOAuthStart(request, env) {

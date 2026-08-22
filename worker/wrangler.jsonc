@@ -22,6 +22,12 @@
   "kv_namespaces": [
     { "binding": "CLOUDFLARE_OPS_OAUTH", "id": "4d55e8a9a8c54d9d8e03253542e0dbdb" }
   ],
+  // Native Workers Rate Limiting (GA 2025-09). Backed by the same engine as WAF
+  // rate limiting rules. namespace_id is any integer unique to this account.
+  "ratelimits": [
+    { "name": "RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 120, "period": 60 } },
+    { "name": "RATE_LIMITER_ADMIN", "namespace_id": "1002", "simple": { "limit": 600, "period": 60 } }
+  ],
   "services": [
     { "binding": "AGENT_HARNESS", "service": "amh-wt-agent-harness" }
   ],
