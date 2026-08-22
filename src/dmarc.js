@@ -7,7 +7,7 @@
 //    every other tag already present on the record.
 
 import { resolveZoneId } from "./zone.js";
-import { applyDnsRecord, listRecords, findRecord } from "./dns.js";
+import { applyDnsRecord, listRecords, findRecord, findRecords, txtKind } from "./dns.js";
 
 /**
  * Strip the surrounding RFC1035 quotes Cloudflare stores TXT values with, and
@@ -126,7 +126,24 @@ export async function getDmarc(client, domain, opts = {}) {
   const zone_id = opts.zoneId || (await resolveZoneId(client, domain));
   const name = `_dmarc.${domain}`;
   const records = opts.records || (await listRecords(client, domain, { zoneId: zone_id }));
-  const record = findRecord(records, "TXT", name) || null;
+  // 2026-08-21 FIX: this used to take findRecord(...) — the FIRST TXT at _dmarc.
+  // Verification tokens (dmarcian-verification=, google-site-verification=, ...)
+  // routinely sit alongside the real record, and if one of them is listed first
+  // we read it as "no DMARC", report policy_before: null, and then write a
+  // minimal v=DMARC1; p=<new> over the REAL record — silently downgrading a
+  // p=reject domain and deleting its rua/ruf/sp/adkim/aspf. The write path
+  // (dns.js selectUpsertTarget) already matches on txtKind; the read path did not.
+  const dmarcRecords = findRecords(records, "TXT", name).filter((r) => txtKind(r.content) === "dmarc");
+  // Two DMARC records at _dmarc is invalid per RFC 7489 (receivers ignore both).
+  // Refuse rather than guess which one to overwrite.
+  if (dmarcRecords.length > 1) {
+    throw new Error(
+      `Refusing to act: ${dmarcRecords.length} DMARC records exist at ${name}. ` +
+      `RFC 7489 requires exactly one — receivers ignore DMARC entirely when there are several. ` +
+      `Delete the extras in the Cloudflare dashboard first.`
+    );
+  }
+  const record = dmarcRecords[0] || null;
   const parsed = record ? parseDmarc(record.content) : null;
   return { record, parsed, name, zone_id, records };
 }
@@ -155,6 +172,48 @@ export async function setDmarcPolicy(client, domain, policy, extra = {}, opts = 
   const baseTags = parsed && parsed.valid ? { ...parsed.tags } : { v: "DMARC1" };
   const order = parsed && parsed.valid && parsed.order.length ? [...parsed.order] : ["v", "p"];
   const policyBefore = baseTags.p || null;
+
+
+  // ── GUARDRAILS (2026-08-21) ────────────────────────────────────────────────
+  // Two ways this tool could break a domain's real mail, both previously
+  // ungated. setupBimi has had a hard DMARC precondition since day one; the
+  // DMARC writer itself had none.
+  const RANK = { none: 0, quarantine: 1, reject: 2 };
+  const force = extra.force === true || opts.force === true;
+
+  // (a) NEVER WEAKEN SILENTLY. Going reject -> none/quarantine turns off
+  // protection that someone deliberately turned on. Require an explicit force.
+  if (!force && policyBefore && RANK[policy] < RANK[policyBefore]) {
+    throw new Error(
+      `Refusing to WEAKEN DMARC for ${domain}: p=${policyBefore} -> p=${policy}. ` +
+      `This reduces protection an operator deliberately enabled. ` +
+      `Pass force:true if that is genuinely intended.`
+    );
+  }
+
+  // (b) NEVER ENFORCE BLIND. Moving to quarantine/reject without a reporting
+  // address means failures are invisible — legitimate mail from an unaligned
+  // sender (ESP, helpdesk, CRM) starts getting rejected and nobody finds out
+  // until customers complain. RFC 7489 §6.3: rua is how you see it coming.
+  if (!force && RANK[policy] >= RANK.quarantine) {
+    const ruaAfter = extra.rua != null ? extra.rua : baseTags.rua;
+    if (!ruaAfter) {
+      throw new Error(
+        `Refusing to set p=${policy} for ${domain} with no rua= reporting address. ` +
+        `Enforcement without reports hides the mail it starts blocking. ` +
+        `Supply rua (e.g. rua=mailto:dmarc@${domain}), or pass force:true.`
+      );
+    }
+    // Jumping straight from no-policy/none to reject skips the monitoring
+    // period entirely. quarantine is the reversible middle step.
+    if (RANK[policy] === RANK.reject && RANK[policyBefore || "none"] < RANK.quarantine) {
+      throw new Error(
+        `Refusing to jump ${domain} straight to p=reject from p=${policyBefore || "none"}. ` +
+        `Move to p=quarantine first, watch the rua reports until aligned mail is clean, ` +
+        `then escalate. Pass force:true to override.`
+      );
+    }
+  }
 
   baseTags.p = policy;
   if (!order.includes("p")) order.push("p");

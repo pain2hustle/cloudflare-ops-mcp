@@ -25,10 +25,45 @@ async function getUpstream(env, ns) {
   try { return JSON.parse(await env.CLOUDFLARE_OPS_OAUTH.get(up(ns))); } catch { return null; }
 }
 
+// Reject upstreams that point anywhere except a public HTTPS host. Previously the
+// only check was a `https://` prefix, so an operator (or anything that reached
+// this tool) could aim the Worker at loopback, link-local, RFC1918, or cloud
+// metadata and have it POST caller-supplied JSON there from Cloudflare's edge.
+// 2026-08-21.
+function validateUpstreamUrl(raw) {
+  let u;
+  try { u = new URL(String(raw || "")); } catch { return "url must be a valid absolute URL"; }
+  if (u.protocol !== "https:") return "url must be https://";
+  if (u.username || u.password) return "url must not embed credentials";
+  const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".internal") || host.endsWith(".local")) {
+    return `refusing non-public host: ${host}`;
+  }
+  // IPv4 literal — block loopback / private / link-local / metadata / CGNAT.
+  const v4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (v4) {
+    const [a, b] = [Number(v4[1]), Number(v4[2])];
+    if (a === 127 || a === 10 || a === 0 ||
+        (a === 172 && b >= 16 && b <= 31) ||
+        (a === 192 && b === 168) ||
+        (a === 169 && b === 254) ||          // link-local incl. 169.254.169.254 metadata
+        (a === 100 && b >= 64 && b <= 127)) { // CGNAT
+      return `refusing non-public address: ${host}`;
+    }
+  }
+  // IPv6 literal — block loopback, unique-local, link-local, and v4-mapped.
+  if (host.includes(":")) {
+    if (host === "::1" || host === "::" || /^f[cd]/.test(host) || /^fe80/.test(host) || host.includes("::ffff:")) {
+      return `refusing non-public address: ${host}`;
+    }
+  }
+  return null;
+}
 export async function addUpstream(env, { namespace, url, auth } = {}) {
   const ns = cleanNs(namespace);
   if (!ns) return { error: true, message: "namespace required (a-z0-9_-)" };
-  if (!/^https:\/\//.test(String(url || ""))) return { error: true, message: "url must be https://" };
+  const urlErr = validateUpstreamUrl(url);
+  if (urlErr) return { error: true, message: urlErr };
   const record = { namespace: ns, url: String(url), auth: auth ? String(auth) : null, added_at: Date.now() };
   await env.CLOUDFLARE_OPS_OAUTH.put(up(ns), JSON.stringify(record));
   const idx = await readIndex(env);

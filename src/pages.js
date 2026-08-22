@@ -127,30 +127,69 @@ export async function planPagesCutover(client, domain, opts = {}) {
   let recordsForUpsert = current.filter((r) => !deletePlan.some((d) => d.id === r.id));
   const deleted = [];
 
-  if (apply) {
-    for (const record of deletePlan) {
-      deleted.push(await deleteDnsRecord(client, root, record.id, { zoneId: zone_id, confirm: true }));
-    }
-    recordsForUpsert = await listRecords(client, root, { zoneId: zone_id });
-  }
+  // 2026-08-21 — CUTOVER IS NOW RECOVERABLE.
+  // This used to delete every conflicting apex/www record in a loop and THEN
+  // create the CNAMEs, with no try/catch anywhere. Any failure in between (a
+  // Cloudflare 5xx, a permission gap, or the free-tier 50-subrequest cap after
+  // ~45 deletions) left the apex records gone and no CNAME — site offline — and
+  // because the exception propagated out, the `deleted` array was lost, so
+  // there was no record anywhere of what had been removed. Nothing to restore
+  // from. Now we snapshot first and roll back on any failure.
+  const snapshot = current
+    .filter((r) => deletePlan.some((d) => d.id === r.id))
+    .map((r) => ({ type: r.type, name: r.name, content: r.content, ttl: r.ttl, proxied: r.proxied, priority: r.priority, comment: r.comment }));
 
   const upserts = [];
-  for (const desired of desiredRecords(root, target, includeWww)) {
-    const result = await applyDnsRecord(client, root, desired, {
-      zoneId: zone_id,
-      records: recordsForUpsert,
-      apply,
-    });
-    upserts.push(result);
+  let restored = null;
 
-    if (apply && result.after && result.after.id) {
-      recordsForUpsert = recordsForUpsert.filter((r) => r.id !== result.after.id);
-      recordsForUpsert.push(result.after);
+  try {
+    if (apply) {
+      for (const record of deletePlan) {
+        deleted.push(await deleteDnsRecord(client, root, record.id, { zoneId: zone_id, confirm: true }));
+      }
+      recordsForUpsert = await listRecords(client, root, { zoneId: zone_id });
     }
+
+    for (const desired of desiredRecords(root, target, includeWww)) {
+      const result = await applyDnsRecord(client, root, desired, {
+        zoneId: zone_id,
+        records: recordsForUpsert,
+        apply,
+      });
+      upserts.push(result);
+
+      if (apply && result.after && result.after.id) {
+        recordsForUpsert = recordsForUpsert.filter((r) => r.id !== result.after.id);
+        recordsForUpsert.push(result.after);
+      }
+    }
+  } catch (e) {
+    if (!apply || deleted.length === 0) throw e;
+    // We already deleted records and then failed. Put them back, best effort,
+    // and surface BOTH the original failure and the exact snapshot so a human
+    // can finish the restore by hand if any re-create also failed.
+    restored = { attempted: snapshot.length, ok: 0, failed: [] };
+    for (const rec of snapshot) {
+      try {
+        await applyDnsRecord(client, root, rec, { zoneId: zone_id, apply: true });
+        restored.ok += 1;
+      } catch (re) {
+        restored.failed.push({ record: rec, error: (re && re.message) || String(re) });
+      }
+    }
+    const err = new Error(
+      `pages_cutover FAILED after deleting ${deleted.length} record(s): ${(e && e.message) || e}. ` +
+      `Rollback restored ${restored.ok}/${restored.attempted}.` +
+      (restored.failed.length ? ` ${restored.failed.length} could NOT be restored — see .restore for the exact records to re-create by hand.` : ` The zone is back to its previous state.`)
+    );
+    err.restore = { snapshot, restored, deleted };
+    throw err;
   }
 
   return {
     action: "pages_cutover",
+    // Everything needed to undo this cutover by hand, always returned.
+    undo: { restore_records: snapshot },
     apply,
     domain: root,
     target,

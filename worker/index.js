@@ -477,8 +477,19 @@ async function runTool(name, args, env, authContext) {
         bimi: !!s.bimi,
         dkim_records: dkim,
       };
-      const all_pass = checks.spf && checks.dmarc && enforced && mx && checks.bimi;
-      return { domain, checks, all_pass };
+      // 2026-08-21: all_pass used to REQUIRE bimi (cosmetic, rarely deployed)
+      // and IGNORE dkim_records — which it had already computed. So a properly
+      // authenticated domain with no BIMI logo reported all_pass:false, while a
+      // domain with ZERO DKIM keys reported all_pass:true. Email authentication
+      // is SPF + DKIM + enforced DMARC; BIMI is a logo that rides on top of it.
+      const all_pass = checks.spf && dkim > 0 && checks.dmarc && enforced && mx;
+      return {
+        domain,
+        checks,
+        all_pass,
+        // BIMI is reported, never required.
+        bimi_ready: all_pass && checks.bimi,
+      };
     }
 
     case "apply_dns_record":
@@ -590,7 +601,13 @@ async function handleRpc(msg, env, authContext) {
     // upstream never breaks the catalog — federatedTools swallows its own errors.
     let fed = [];
     try { fed = await federatedTools(env); } catch { fed = []; }
-    return rpcResult(id, { tools: [...TOOLS, ...MGMT_TOOL_DEFS, ...fed] });
+    // 2026-08-21: management tools are ADMIN-ONLY. Their state (fed:*, policy:*)
+    // is GLOBAL, not per-connection, so a public connector user could previously
+    // register a hostile federated upstream — injecting attacker-authored tool
+    // names/descriptions into EVERY other user's tools/list — or policy_set a
+    // core tool to "block" and DoS everyone. Neither was undoable by the victim.
+    const isAdmin = authContext && authContext.mode === "admin";
+    return rpcResult(id, { tools: [...TOOLS, ...(isAdmin ? MGMT_TOOL_DEFS : []), ...fed] });
   }
   if (method === "tools/call") {
     const toolName = params && params.name;
@@ -599,6 +616,12 @@ async function handleRpc(msg, env, authContext) {
       // 1) Management tools (federation/policy admin) bypass the policy gate and
       //    the CF client — so you can never lock yourself out of governance.
       if (MGMT_TOOLS.has(toolName)) {
+        // ADMIN ONLY — see the note in tools/list. runMgmtTool writes global
+        // federation/policy state and deliberately bypasses the policy gate, so
+        // it must never be reachable with a per-user cfops_ connector key.
+        if (!authContext || authContext.mode !== "admin") {
+          return rpcResult(id, { content: [{ type: "text", text: JSON.stringify({ error: "forbidden: " + toolName + " is an owner/admin tool. Federation and policy are global settings; per-user connector keys cannot change them." }, null, 2) }], isError: true });
+        }
         const out = await runMgmtTool(toolName, args, env);
         return rpcResult(id, { content: [{ type: "text", text: JSON.stringify(out, null, 2) }], isError: !!(out && out.error) });
       }
@@ -850,7 +873,7 @@ export default {
       return await fetchInner(request, env);
     } catch (e) {
       const safe = redactToken(String((e && e.stack) || (e && e.message) || e));
-      return new Response(JSON.stringify({ ok: false, error: "worker_exception", detail: safe.split("\\n").slice(0, 3).join("\\n") }, null, 2), { status: 500, headers: { "content-type": "application/json", ...CORS } });
+      return new Response(JSON.stringify({ ok: false, error: "worker_exception", detail: safe.split("\n").slice(0, 3).join(" | ") }, null, 2), { status: 500, headers: { "content-type": "application/json", ...CORS } });
     }
   },
 };

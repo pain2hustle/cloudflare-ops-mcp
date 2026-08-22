@@ -138,7 +138,9 @@ export async function setupEmailRouting(client, domain, cfg = {}, opts = {}) {
   // a forward rule DISABLED until its destination is verified, so we refuse to
   // create a rule to an unverified address (unless forced) rather than leave a
   // silently-dead rule behind. A destination's `verified` field is a timestamp
-  // (or null). If we can't read the list, we warn but don't hard-block.
+  // (or null). If we CAN'T read the list we now refuse on apply (fail closed) —
+  // a gate that protects mail must not evaporate when it goes blind. force:true
+  // overrides.
   const verifiedSet = new Set();
   let destKnown = false;
   if (account_id) {
@@ -164,7 +166,22 @@ export async function setupEmailRouting(client, domain, cfg = {}, opts = {}) {
       await enableRouting(client, zone_id, { apply: true });
       routing_enabled = true;
     } catch (e) {
-      warnings.push("Could not auto-enable Email Routing: " + ((e && e.message) || e));
+      // 2026-08-21: this used to be a WARNING and execution continued to create
+      // forward rules. Without Email Routing enabled the zone has no Cloudflare
+      // MX, so every rule created is inert — mail silently black-holes while the
+      // tool returns a plan that reads as success (worker sets isError from the
+      // absence of .error). Enable failing is a HARD STOP.
+      const msg = (e && e.message) || String(e);
+      return {
+        error: `Email Routing could not be enabled on ${domain}: ${msg}. ` +
+          `No forward rules were created — without routing enabled they would never deliver. ` +
+          `Check the token has Account > Email Routing Addresses and Zone > Email Routing Rules.`,
+        domain,
+        zone_id,
+        routing_enabled: false,
+        rules_created: 0,
+        warnings,
+      };
     }
   } else if (!apply && routing_enabled !== true) {
     warnings.push("Email Routing is NOT enabled on this zone — applying will enable it (adds MX/SPF) before creating rules.");
@@ -229,7 +246,9 @@ export async function setupEmailRouting(client, domain, cfg = {}, opts = {}) {
     // Refuse to write a rule to an unverified destination unless forced — it would
     // just create a dead, disabled rule. Verified destinations proceed normally.
     if (apply && action !== "noop") {
-      if (destKnown && !verified && !force) {
+      // 2026-08-21: fail CLOSED. Was `destKnown && ...`, so an unreadable
+      // destination list silently disabled this mail-safety gate.
+      if (!force && (!destKnown || !verified)) {
         item.action = "blocked-unverified";
       } else if (action === "create") {
         const { result } = await client.request(
@@ -285,7 +304,8 @@ export async function setupEmailRouting(client, domain, cfg = {}, opts = {}) {
       warnings.push(w);
     }
     if (apply && !same) {
-      if (destKnown && !caVerified && !force) {
+      // 2026-08-21: fail CLOSED (see note above).
+      if (!force && (!destKnown || !caVerified)) {
         catchAll.action = "blocked-unverified";
       } else {
         const { result } = await client.request(

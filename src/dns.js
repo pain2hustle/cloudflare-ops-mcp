@@ -115,7 +115,7 @@ export function findRecord(records, type, name) {
  * @param {object} desired {type,name,content,ttl,proxied,priority,comment}
  * @returns {object}
  */
-function buildRecordBody(desired) {
+function buildRecordBody(desired, existing = null) {
   const type = String(desired.type).toUpperCase();
   const body = {
     type,
@@ -123,9 +123,24 @@ function buildRecordBody(desired) {
     content: desired.content,
   };
 
+  // 2026-08-21: PRESERVE what the caller did not ask to change.
+  // Previously an update that only touched `content` also sent proxied:false
+  // and ttl:1, because both fell through to defaults. Changing an origin IP
+  // therefore flipped the record orange -> grey, PUBLISHING THE ORIGIN IP and
+  // dropping WAF/DDoS/SSL-mode behaviour, and reset a deliberate TTL to Auto.
+  // Now: explicit wins, otherwise inherit the live record, otherwise default.
   const proxiableTypes = new Set(["A", "AAAA", "CNAME"]);
-  let proxied =
-    desired.proxied === true && proxiableTypes.has(type) ? true : false;
+  const inherit = existing || null;
+  let proxied;
+  if (!proxiableTypes.has(type)) {
+    proxied = false;                                  // TXT/MX etc. cannot proxy
+  } else if (desired.proxied === true || desired.proxied === false) {
+    proxied = desired.proxied;                        // caller was explicit
+  } else if (inherit && typeof inherit.proxied === "boolean") {
+    proxied = inherit.proxied;                        // keep what is live
+  } else {
+    proxied = false;                                  // new record default
+  }
   if (proxiableTypes.has(type)) {
     body.proxied = proxied;
   }
@@ -134,7 +149,9 @@ function buildRecordBody(desired) {
   if (proxied) {
     body.ttl = 1;
   } else if (desired.ttl != null) {
-    body.ttl = desired.ttl;
+    body.ttl = desired.ttl;                           // caller was explicit
+  } else if (inherit && inherit.ttl != null) {
+    body.ttl = inherit.ttl;                           // keep what is live
   } else {
     body.ttl = 1;
   }
@@ -153,7 +170,13 @@ function buildRecordBody(desired) {
  */
 function diffRecord(current, desiredBody) {
   const fields = [];
-  const compareKeys = ["content", "ttl", "proxied", "priority", "comment"];
+  // 2026-08-21: "comment" deliberately excluded from change detection.
+  // Every DMARC/BIMI apply attaches its own "(cloudflare-ops-mcp)" comment, so
+  // including it here made the FIRST apply against an already-correct record
+  // report changed:true and rewrite it — a phantom write that also clobbered an
+  // operator's hand-written note. The comment is still SENT on create/update;
+  // it just no longer counts as a reason to write.
+  const compareKeys = ["content", "ttl", "proxied", "priority"];
   const isTxt = String(desiredBody.type).toUpperCase() === "TXT";
   for (const k of compareKeys) {
     if (!(k in desiredBody)) continue;
@@ -190,8 +213,10 @@ export async function applyDnsRecord(client, domain, desired, opts = {}) {
   const records =
     opts.records || (await client.paginate(`/zones/${zone_id}/dns_records`));
 
-  const desiredBody = buildRecordBody(desired);
   const { match: existing, candidates, ambiguous } = selectUpsertTarget(records, desired, opts);
+  // Built AFTER the target is resolved so unspecified proxied/ttl inherit from
+  // the record we are about to overwrite instead of silently resetting it.
+  const desiredBody = buildRecordBody(desired, existing);
 
   // Refuse to guess when several records share this type+name and we can't tell
   // which one to update — writing would silently clobber an unrelated record
